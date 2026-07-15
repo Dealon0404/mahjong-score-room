@@ -1,0 +1,25 @@
+{
+  "name": "雀數",
+  "short_name": "雀數",
+  "description": "港式麻雀計數、記牌、流局、調位同結算。",
+  "lang": "zh-Hant-HK",
+  "start_url": "./web-preview.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f0e7",
+  "theme_color": "#f5f0e7",
+  "icons": [
+    {
+      "src": "./assets/icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/favicon.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    }
+  ]
+}

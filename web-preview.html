@@ -1,0 +1,2231 @@
+<!doctype html>
+<html lang="zh-Hant-HK">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f5f0e7" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="雀數" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./assets/icon.png" />
+  <link rel="icon" href="./assets/favicon.png" />
+  <title>雀數</title>
+  <style>
+    :root {
+      --ink: #2e2f2b;
+      --muted: #756c60;
+      --paper: #fffaf0;
+      --wash: #f5f0e7;
+      --line: #e4d4bc;
+      --green: #143d38;
+      --red: #d1442f;
+      --gold: #f8d675;
+      --good: #177a55;
+      --bad: #b43726;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 20% 0%, #fff4d5 0, transparent 34%), linear-gradient(135deg, #f7eddd 0%, #eef5ed 100%);
+      color: var(--ink);
+      font-family: "Microsoft JhengHei", "PingFang HK", "Noto Sans TC", sans-serif;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .hero {
+      min-height: 260px;
+      display: grid;
+      place-items: center;
+      gap: 16px;
+      padding: 24px 24px 10px;
+      color: var(--green);
+      text-align: center;
+    }
+
+    .home-wrap {
+      min-height: calc(100vh - 44px);
+      display: grid;
+      align-content: start;
+      gap: 18px;
+    }
+
+    .tile-emoji {
+      display: grid;
+      place-items: center;
+      width: 82px;
+      height: 82px;
+      border-radius: 24px;
+      background: #fffaf0;
+      color: var(--red);
+      font-size: 52px;
+      box-shadow: 0 16px 34px rgba(29, 21, 13, 0.18);
+    }
+
+    .eyebrow {
+      color: var(--red);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(40px, 8vw, 76px);
+      letter-spacing: 0;
+      line-height: 0.95;
+    }
+
+    h2 {
+      color: var(--green);
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+
+    h3 {
+      font-size: 18px;
+      line-height: 1.35;
+    }
+
+    .sub {
+      max-width: 680px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    .guest-card {
+      width: min(520px, 100%);
+      display: grid;
+      gap: 16px;
+      justify-self: center;
+      margin-top: 4px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .guest-card label {
+      text-align: left;
+    }
+
+    .home-actions {
+      display: grid;
+      gap: 12px;
+    }
+
+    .home-actions .btn {
+      width: 100%;
+      min-height: 54px;
+      font-size: 17px;
+    }
+
+    .join-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+      justify-items: center;
+    }
+
+    .join-actions .btn {
+      width: min(260px, 100%);
+      min-height: 40px;
+      border-radius: 10px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .panel,
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 12px 36px rgba(57, 45, 25, 0.08);
+    }
+
+    .card {
+      display: grid;
+      gap: 12px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .btns,
+    .row,
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      min-height: 46px;
+      border: 0;
+      border-radius: 12px;
+      padding: 0 18px;
+      color: #fffaf0;
+      background: var(--red);
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .btn.secondary {
+      color: var(--green);
+      background: #ecdfc8;
+    }
+
+    .btn.dark {
+      background: var(--green);
+    }
+
+    .btn.small {
+      min-height: 34px;
+      border-radius: 999px;
+      padding: 0 12px;
+      color: var(--ink);
+      background: var(--gold);
+      font-size: 13px;
+    }
+
+    .btn.danger {
+      color: #9b3328;
+      background: #f3d6d0;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .screen {
+      display: none;
+      margin-top: 18px;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--ink);
+      font-weight: 800;
+    }
+
+    input,
+    select,
+    textarea {
+      min-height: 46px;
+      width: 100%;
+      border: 1px solid #d7c3a6;
+      border-radius: 12px;
+      padding: 0 12px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    textarea {
+      min-height: 92px;
+      padding: 12px;
+      resize: vertical;
+    }
+
+    .preset-group {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .preset-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .option-head,
+    .invite-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .option-board {
+      display: grid;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .option-card {
+      display: grid;
+      gap: 12px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 12px 36px rgba(57, 45, 25, 0.08);
+    }
+
+    .option-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .option-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 999px;
+      background: #f8efd9;
+      border: 1px solid #eadbc6;
+    }
+
+    .option-help {
+      min-height: 30px;
+      border: 0;
+      border-radius: 999px;
+      padding: 0 10px;
+      color: var(--ink);
+      background: var(--gold);
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .selected-summary {
+      position: sticky;
+      bottom: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 12px;
+      align-items: center;
+      margin-top: 18px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 250, 240, 0.96);
+      box-shadow: 0 -12px 34px rgba(57, 45, 25, 0.12);
+      backdrop-filter: blur(8px);
+    }
+
+    .invite-panel {
+      display: grid;
+      gap: 14px;
+    }
+
+    .invite-details {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .invite-details[hidden] {
+      display: none;
+    }
+
+    .room-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .room-code {
+      color: var(--red);
+      font-size: clamp(34px, 7vw, 54px);
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .qr {
+      width: 146px;
+      height: 146px;
+      border-radius: 10px;
+      background: #fff;
+      border: 8px solid #fff;
+    }
+
+    .seat-table {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) minmax(240px, 1.15fr) minmax(180px, 1fr);
+      grid-template-rows: auto minmax(190px, auto) auto;
+      gap: 16px;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    .table-center {
+      grid-column: 2;
+      grid-row: 2;
+      min-height: 180px;
+      display: grid;
+      place-items: center;
+      gap: 8px;
+      border: 2px solid #d6c09e;
+      border-radius: 26px;
+      background: linear-gradient(135deg, #f8efd9, #fffaf0);
+      color: var(--green);
+      font-weight: 900;
+      box-shadow: inset 0 0 0 10px rgba(248, 214, 117, 0.18);
+    }
+
+    .table-wind {
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: var(--gold);
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 950;
+    }
+
+    .table-seat {
+      display: grid;
+      gap: 10px;
+      min-height: 118px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--paper);
+      box-shadow: 0 12px 34px rgba(57, 45, 25, 0.08);
+    }
+
+    .table-seat.dealer {
+      border-color: #d5a93f;
+      box-shadow: 0 14px 38px rgba(190, 133, 26, 0.16);
+    }
+
+    .table-seat.clickable {
+      cursor: pointer;
+    }
+
+    .table-seat.clickable:focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 2px;
+    }
+
+    .table-seat.north {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .table-seat.east {
+      grid-column: 3;
+      grid-row: 2;
+    }
+
+    .table-seat.south {
+      grid-column: 2;
+      grid-row: 3;
+    }
+
+    .table-seat.west {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .seat-head,
+    .seat-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .seat-labels {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .dealer-badge {
+      border-radius: 999px;
+      padding: 5px 9px;
+      background: var(--gold);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 950;
+    }
+
+    .avatar-button {
+      width: 64px;
+      height: 64px;
+      justify-self: center;
+      overflow: hidden;
+      border: 2px solid #dec9a8;
+      border-radius: 999px;
+      background: #f8efd9;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .avatar-button img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .avatar-input {
+      display: none;
+    }
+
+    .player-name {
+      display: block;
+      min-width: 0;
+      overflow: hidden;
+      color: var(--ink);
+      font-size: 20px;
+      font-weight: 900;
+      text-align: center;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .seat-total {
+      align-self: center;
+      padding: 8px 0 12px;
+      font-size: 28px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .seat-total.pos {
+      color: var(--good);
+    }
+
+    .seat-total.neg {
+      color: var(--bad);
+    }
+
+    .name-edit {
+      min-width: 42px;
+      padding: 0 12px;
+      font-size: 16px;
+    }
+
+    .seat-plus {
+      min-height: 58px;
+      border: 1px dashed #c7af8c;
+      border-radius: 14px;
+      background: #f8efd9;
+      color: var(--green);
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .seat-plus span {
+      display: inline-grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      margin-right: 8px;
+      border-radius: 999px;
+      background: var(--green);
+      color: #fffaf0;
+    }
+
+    .player-row,
+    .money-row,
+    .history-row {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr) 110px;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--paper);
+    }
+
+    .seat {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      color: #fffaf0;
+      background: var(--green);
+      font-weight: 900;
+      font-size: 18px;
+    }
+
+    .money {
+      text-align: right;
+      font-weight: 900;
+      font-size: 17px;
+    }
+
+    .pos {
+      color: var(--good);
+    }
+
+    .neg {
+      color: var(--bad);
+    }
+
+    .chip {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: #ecdfc8;
+      color: var(--ink);
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .chip.active {
+      color: #fffaf0;
+      background: var(--green);
+    }
+
+    .winner-board {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px;
+    }
+
+    .winner-card {
+      min-height: 138px;
+      display: grid;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      background: #fffaf0;
+      color: var(--ink);
+      cursor: pointer;
+      text-align: left;
+      box-shadow: 0 12px 34px rgba(57, 45, 25, 0.08);
+    }
+
+    .winner-card:focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 2px;
+    }
+
+    .winner-card-name {
+      display: block;
+      overflow: hidden;
+      font-size: 20px;
+      font-weight: 900;
+      text-align: center;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .round-form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+    }
+
+    .round-preview {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffdf7;
+    }
+
+    .photo-assist-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .tile-photo-preview {
+      width: 100%;
+      max-height: 260px;
+      object-fit: contain;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .analysis-summary {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid #eadbc6;
+      border-radius: 14px;
+      background: #fffdf7;
+    }
+
+    .analysis-total {
+      color: var(--red);
+      font-size: 32px;
+      font-weight: 950;
+    }
+
+    .analysis-reasons {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    .analysis-warning {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f8efd9;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .tile-chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tile-chip {
+      border-radius: 8px;
+      padding: 6px 8px;
+      background: #fffaf0;
+      border: 1px solid var(--line);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .status-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .status-pill {
+      border-radius: 999px;
+      padding: 7px 11px;
+      background: #f8efd9;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .history-card {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 12px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-weight: 900;
+      font-size: 13px;
+    }
+
+    .pill.pos {
+      background: #d9efe3;
+    }
+
+    .pill.neg {
+      background: #f3d6d0;
+    }
+
+    dialog {
+      width: min(560px, calc(100% - 28px));
+      border: 0;
+      border-radius: 18px;
+      padding: 0;
+      background: var(--paper);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+    }
+
+    dialog::backdrop {
+      background: rgba(20, 23, 20, 0.42);
+    }
+
+    .modal-inner {
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .def-block {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .def-title {
+      color: var(--red);
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    @media (max-width: 680px) {
+      .app {
+        padding: 14px;
+      }
+
+      .room-top,
+      .invite-details,
+      .player-row,
+      .money-row,
+      .history-row {
+        grid-template-columns: 1fr;
+      }
+
+      .option-head,
+      .invite-head {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .seat-table {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+      }
+
+      .table-center,
+      .table-seat.north,
+      .table-seat.east,
+      .table-seat.south,
+      .table-seat.west {
+        grid-column: 1;
+        grid-row: auto;
+      }
+
+      .qr {
+        width: 128px;
+        height: 128px;
+      }
+
+      .money {
+        text-align: left;
+      }
+
+      .selected-summary {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section id="home" class="screen active">
+      <div class="home-wrap">
+        <div class="hero">
+          <div class="tile-emoji" aria-hidden="true">中</div>
+          <div class="eyebrow">港式麻雀計數</div>
+          <h1>雀數</h1>
+          <p class="sub">遊客試用版。開房、揀枱規、記牌、流局、調位、埋數。</p>
+        </div>
+        <div class="panel guest-card">
+          <h2>今日點叫你？</h2>
+          <label>你個名<input id="userName" value="我" /></label>
+          <div class="home-actions">
+            <button class="btn" onclick="openPresets()">開新房</button>
+            <button class="btn secondary" onclick="showScreen('join')">輸入房號入房 / Scan QR Code</button>
+            <button class="btn secondary" onclick="restoreRoom()">返去上次間房</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="presets" class="screen">
+      <div class="toolbar">
+        <button class="btn secondary" onclick="showScreen('home')">返回</button>
+        <h2>揀枱規</h2>
+        <button class="btn small" onclick="openDefinition('總覽')">枱規解釋</button>
+      </div>
+      <div class="panel">
+        <label>房名<input id="roomName" value="今晚麻雀局" /></label>
+      </div>
+      <div class="panel">
+        <h2>常用枱規</h2>
+        <label>儲存名稱<input id="tableFavouriteName" placeholder="例如 Friday 五一" /></label>
+        <div class="btns" style="margin-top: 10px;">
+          <button class="btn secondary" onclick="saveNamedTableFavourite()">儲存目前枱規</button>
+        </div>
+        <div class="chips" id="tableFavouriteList" style="margin-top: 12px;"></div>
+      </div>
+      <div id="presetList"></div>
+      <div class="selected-summary">
+        <div>
+          <h3 id="selectedSettingName">二五雞・半銃・半辣上・8番頂 $64</h3>
+          <p class="muted" id="selectedSettingMeta">每位封頂 $64</p>
+        </div>
+        <button class="btn secondary" onclick="openCustomDialog()">自訂</button>
+        <button class="btn" onclick="createRoomFromSelection()">揀呢個開房</button>
+      </div>
+    </section>
+
+    <section id="join" class="screen">
+      <div class="toolbar">
+        <button class="btn secondary" onclick="showScreen('home')">返回</button>
+        <h2>入房</h2>
+        <span></span>
+      </div>
+      <div class="panel">
+        <label>房號<input id="joinCode" placeholder="例如 ABC123" /></label>
+        <div class="join-actions">
+          <button class="btn" onclick="joinRoom()">入房</button>
+          <button class="btn secondary" onclick="scanQrPreview()">Scan QR Code</button>
+        </div>
+        <p class="muted">可以輸入房號，或者喺手機正式版用相機掃 QR Code。</p>
+      </div>
+    </section>
+
+    <section id="room" class="screen">
+      <div class="toolbar">
+        <button class="btn secondary" onclick="showScreen('home')">返回</button>
+        <h2 id="roomTitle">房間</h2>
+        <span></span>
+      </div>
+      <div class="panel invite-panel">
+        <div class="invite-head">
+          <div>
+            <p class="muted">房間邀請</p>
+            <h3 id="inviteTitle">房號同 QR Code 已收起</h3>
+            <p class="muted" id="roomSetting"></p>
+          </div>
+          <button class="btn secondary" id="inviteToggle" onclick="toggleInvite()">顯示房號 / QR Code</button>
+        </div>
+        <div class="invite-details" id="inviteDetails" hidden>
+          <div>
+            <p class="muted">房號</p>
+            <div class="room-code" id="roomCode"></div>
+          </div>
+          <img id="roomQr" class="qr" alt="房間 QR Code" />
+        </div>
+      </div>
+      <div class="btns" style="margin-top: 14px;">
+        <button class="btn secondary" onclick="undoLastRound()">還原上一鋪</button>
+        <button class="btn secondary" onclick="saveDrawRound()">流局</button>
+        <button class="btn secondary" onclick="openSwapSeatDialog()">調位</button>
+        <button class="btn secondary" onclick="showScreen('history')">牌局紀錄</button>
+        <button class="btn secondary" onclick="showScreen('settlement')">結算</button>
+      </div>
+      <div class="seat-table" id="players"></div>
+    </section>
+
+    <section id="record" class="screen">
+      <div class="toolbar">
+        <button class="btn secondary" onclick="showScreen('room')">返回</button>
+        <h2 id="recordTitle">記一鋪</h2>
+        <span></span>
+      </div>
+      <div class="panel">
+        <h2>邊個 Win？</h2>
+        <p class="muted">點贏嗰位，之後喺 popup 入面揀食糊方式、出銃/包自摸同番數。</p>
+        <div class="winner-board" id="winnerCards"></div>
+      </div>
+    </section>
+
+    <section id="history" class="screen">
+      <div class="toolbar">
+        <button class="btn secondary" onclick="showScreen('room')">返回</button>
+        <h2>牌局紀錄</h2>
+        <span></span>
+      </div>
+      <div id="historyList"></div>
+    </section>
+
+    <section id="settlement" class="screen">
+      <div class="toolbar">
+        <button class="btn secondary" onclick="showScreen('room')">返回</button>
+        <h2>結算</h2>
+        <button class="btn small" onclick="openExportSettlement()">匯出結算</button>
+      </div>
+      <div class="grid">
+        <div class="panel">
+          <h2>總數</h2>
+          <div id="settlementTotals"></div>
+        </div>
+        <div class="panel">
+          <h2>最少交易</h2>
+          <div id="settlementLines"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="definitionModal">
+    <div class="modal-inner">
+      <h2 id="definitionTitle">枱規解釋</h2>
+      <div id="definitionBody"></div>
+      <button class="btn" onclick="definitionModal.close()">明白</button>
+    </div>
+  </dialog>
+
+  <dialog id="customModal">
+    <div class="modal-inner">
+      <h2>自訂枱規</h2>
+      <p class="muted">適合屋企玩法同朋友私下講好嘅枱規。基本計法仍然會跟你上面揀嘅二五雞 / 五一 / 一二蚊、半銃 / 全銃、半辣上 / 辣辣上。</p>
+      <label>自訂名稱<input id="customName" placeholder="例如 五一全銃八番二五六" /></label>
+      <label>自訂封頂番數<input id="customCapFaan" type="number" min="1" max="18" value="8" /></label>
+      <label>自訂封頂金額<input id="customCapAmount" type="number" min="1" step="1" value="256" /></label>
+      <div class="btns">
+        <button class="btn secondary" onclick="customModal.close()">取消</button>
+        <button class="btn" onclick="applyCustomSetting()">套用自訂</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="sitModal">
+    <div class="modal-inner">
+      <h2 id="sitSeatTitle">坐低</h2>
+      <label>你個名<input id="sitName" placeholder="輸入座位名" /></label>
+      <div class="btns">
+        <button class="btn secondary" onclick="sitModal.close()">取消</button>
+        <button class="btn" id="sitActionButton" onclick="applySitSeat()">坐低</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="swapSeatModal">
+    <div class="modal-inner">
+      <h2>調位</h2>
+      <p class="muted">揀兩位交換座位。已記低嘅輸贏會跟住玩家一齊郁。</p>
+      <label>第一位<select id="swapSeatA"></select></label>
+      <label>第二位<select id="swapSeatB"></select></label>
+      <div class="btns">
+        <button class="btn secondary" onclick="swapSeatModal.close()">取消</button>
+        <button class="btn" onclick="applySwapSeats()">確認調位</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="roundModal">
+    <div class="modal-inner">
+      <h2 id="roundModalTitle">記一鋪</h2>
+      <div class="round-form">
+        <label>食糊方式<select id="roundWinType" onchange="updateRoundDialog()"></select></label>
+        <label id="roundPayerField">邊個出銃？<select id="roundPayer" onchange="updateRoundDialog()"></select></label>
+        <label>幾多番？<select id="roundFaan" onchange="updateRoundDialog()"></select></label>
+      </div>
+      <label>備註<textarea id="roundNote" placeholder="例如 十三么、包自摸、大三元" oninput="updateRoundDialog()"></textarea></label>
+      <div class="photo-assist-actions">
+        <button class="btn dark" onclick="openTileCamera()">影相計番</button>
+        <button class="btn small" onclick="openDefinition('包自摸')">包自摸係咩？</button>
+      </div>
+      <div class="round-preview">
+        <h3>即時計算</h3>
+        <p class="muted" id="roundAmountEach"></p>
+        <div id="roundPreviewRows"></div>
+      </div>
+      <div class="btns">
+        <button class="btn secondary" onclick="roundModal.close()">取消</button>
+        <button class="btn" onclick="saveRoundFromDialog()">確認記錄</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="tileAnalyzerModal">
+    <div class="modal-inner">
+      <h2>影相計番</h2>
+      <p class="muted" id="tileAnalyzerStatus">影低食糊牌之後，系統會分析番數同原因。</p>
+      <img class="tile-photo-preview" id="tilePhotoPreview" alt="食糊牌相" hidden />
+      <div class="analysis-summary" id="tileAnalysisResult"></div>
+      <div>
+        <p class="muted">如果相片分析未夠準，可以先補選見到嘅常見牌型，Accept 後仍然可以手動改番數。</p>
+        <div class="chips" id="tilePatternChips"></div>
+      </div>
+      <div class="btns">
+        <button class="btn secondary" onclick="rejectTileAnalysis()">Reject 唔用</button>
+        <button class="btn" onclick="acceptTileAnalysis()">Accept 用呢個番數</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="messageModal">
+    <div class="modal-inner">
+      <h2 id="messageTitle">提示</h2>
+      <p class="muted" id="messageBody"></p>
+      <button class="btn" onclick="messageModal.close()">明白</button>
+    </div>
+  </dialog>
+
+  <dialog id="confirmModal">
+    <div class="modal-inner">
+      <h2 id="confirmTitle">確認</h2>
+      <p class="muted" id="confirmBody"></p>
+      <div class="btns">
+        <button class="btn secondary" onclick="closeConfirmModal()">取消</button>
+        <button class="btn danger" id="confirmActionButton" onclick="runConfirmAction()">確認</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="noteModal">
+    <div class="modal-inner">
+      <h2>修改備註</h2>
+      <label>備註<textarea id="historyNote" placeholder="例如 十三么、包自摸、大三元"></textarea></label>
+      <div class="btns">
+        <button class="btn secondary" onclick="noteModal.close()">取消</button>
+        <button class="btn" onclick="applyHistoryNote()">儲存備註</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="exportModal">
+    <div class="modal-inner">
+      <h2>匯出結算</h2>
+      <textarea id="exportSettlementText" readonly></textarea>
+      <div class="btns">
+        <button class="btn secondary" onclick="exportModal.close()">關閉</button>
+        <button class="btn" onclick="copySettlementText()">Copy</button>
+      </div>
+    </div>
+  </dialog>
+
+  <input class="avatar-input" id="avatarInput" type="file" accept="image/*" onchange="handleAvatarSelected(event)" />
+  <input class="avatar-input" id="tilePhotoInput" type="file" accept="image/*" capture="environment" onchange="handleTilePhotoSelected(event)" />
+
+  <script>
+    const presets = [
+      ['細枱', '二五雞・半銃・半辣上・8番頂 $64', '二五雞', '半銃', '半辣上', 8, 64],
+      ['細枱', '二五雞・半銃・半辣上・10番頂 $128', '二五雞', '半銃', '半辣上', 10, 128],
+      ['細枱', '二五雞・全銃・半辣上・8番頂 $128', '二五雞', '全銃', '半辣上', 8, 128],
+      ['細枱', '二五雞・全銃・辣辣上・8番頂 $256', '二五雞', '全銃', '辣辣上', 8, 256],
+      ['中枱', '五一・半銃・半辣上・8番頂 $128', '五一', '半銃', '半辣上', 8, 128],
+      ['中枱', '五一・半銃・半辣上・10番頂 $256', '五一', '半銃', '半辣上', 10, 256],
+      ['中枱', '五一・全銃・半辣上・8番頂 $256', '五一', '全銃', '半辣上', 8, 256],
+      ['中枱', '五一・全銃・辣辣上・8番頂 $512', '五一', '全銃', '辣辣上', 8, 512],
+      ['大枱', '一二蚊・半銃・半辣上・8番頂 $256', '一二蚊', '半銃', '半辣上', 8, 256],
+      ['大枱', '一二蚊・半銃・半辣上・10番頂 $512', '一二蚊', '半銃', '半辣上', 10, 512],
+      ['大枱', '一二蚊・全銃・半辣上・8番頂 $512', '一二蚊', '全銃', '半辣上', 8, 512],
+      ['大枱', '一二蚊・全銃・辣辣上・8番頂 $1024', '一二蚊', '全銃', '辣辣上', 8, 1024],
+    ].map((item, index) => ({
+      id: `preset-${index}`,
+      group: item[0],
+      name: item[1],
+      baseType: item[2],
+      discardMode: item[3],
+      growthMode: item[4],
+      capFaan: item[5],
+      capAmount: item[6],
+    }));
+
+    const definitions = {
+      '二五雞': '較細注碼嘅常見計法，適合休閒局。金額大約係五一嘅一半。',
+      '五一': '中等注碼嘅常見計法，金額大約係二五雞嘅兩倍。',
+      '一二蚊': '較大注碼嘅常見計法，金額大約係五一嘅兩倍。',
+      '半銃': '食糊時，出銃者俾較多，另外兩位輸家都要俾部分金額。',
+      '全銃': '食糊時，出銃者一個人包晒該鋪食糊金額，另外兩位唔使俾。',
+      '半辣上': '四番之後用較平滑嘅加幅上升，金額升得冇辣辣上咁急。',
+      '辣辣上': '四番之後繼續每高一番就倍升，金額升得快。',
+      '封頂': '計到封頂番數或以上，都只會用封頂金額計。',
+      '8番頂': '計到 8番 或以上都當 8番計。適合想控制最大輸贏嘅枱。',
+      '10番頂': '計到 10番 或以上都當 10番計。大牌會比 8番頂再高一級。',
+      '封頂金額': '即係自摸時每位輸家最多俾幾多錢。食糊、全銃、包自摸會再按玩法計總數。',
+      '自訂': '自訂適合屋企玩法：可以自己改名稱、封頂番數、封頂金額；其他基本計法照用上面揀好嘅選項。',
+      '包自摸': '有人需要包晒自摸金額時使用。贏家照收自摸總額，包自摸者一個人俾晒。',
+    };
+
+    const definitionGroups = {
+      '計錢方式': ['二五雞', '五一', '一二蚊'],
+      '出銃計法': ['半銃', '全銃'],
+      '上辣方式': ['半辣上', '辣辣上'],
+      '封頂番數': ['8番頂', '10番頂'],
+      '封頂金額': ['封頂金額'],
+      '總覽': ['二五雞', '五一', '一二蚊', '半銃', '全銃', '半辣上', '辣辣上', '8番頂', '10番頂', '封頂金額', '自訂', '包自摸'],
+    };
+
+    const optionGroups = [
+      { title: '計錢方式', key: 'baseType', options: ['二五雞', '五一', '一二蚊'] },
+      { title: '出銃計法', key: 'discardMode', options: ['半銃', '全銃'] },
+      { title: '上辣方式', key: 'growthMode', options: ['半辣上', '辣辣上'] },
+      { title: '封頂番數', key: 'capFaan', options: [8, 10], label: (value) => `${value}番頂` },
+      { title: '封頂金額', key: 'capAmount', options: [32, 48, 64, 96, 128, 192, 256, 384, 512, 1024], label: (value) => money(value) },
+    ];
+
+    const roomStorageKey = 'mahjong-web-preview';
+    const tableFavouriteKey = 'mahjong-table-favourite';
+    const namedTableFavouritesKey = 'mahjong-table-favourite-list';
+
+    const seats = ['東', '南', '西', '北'];
+    const seatPosition = { 東: 'east', 南: 'south', 西: 'west', 北: 'north' };
+    const windOrder = ['東', '南', '西', '北'];
+    const tilePatternOptions = [
+      { id: 'self-draw', name: '自摸', faan: 1, reason: '自己摸入食糊，按常見屋企玩法加 1番。' },
+      { id: 'menqing', name: '門清', faan: 1, reason: '全程無上、碰、槓，門清加 1番。' },
+      { id: 'pingwu', name: '平糊', faan: 1, reason: '四組順子加一對眼，無刻子。' },
+      { id: 'duiduiwu', name: '對對糊', faan: 3, reason: '全部由刻子或槓組成。' },
+      { id: 'mixed-one-suit', name: '混一色', faan: 3, reason: '一門數牌加字牌。' },
+      { id: 'pure-one-suit', name: '清一色', faan: 7, reason: '全部同一門數牌，無字牌。' },
+      { id: 'small-three-dragons', name: '小三元', faan: 5, reason: '中發白其中兩副刻子，另一隻做眼。' },
+      { id: 'big-three-dragons', name: '大三元', faan: 8, reason: '中發白三副都係刻子或槓。' },
+      { id: 'all-honors', name: '字一色', faan: 10, reason: '全副牌都係風牌或三元牌。' },
+    ];
+    let room = null;
+    let rounds = [];
+    let editingRoundId = null;
+    let inviteOpen = false;
+    let pendingSeatId = null;
+    let pendingAvatarPlayerId = null;
+    let pendingNoteRoundId = null;
+    let pendingConfirmAction = null;
+    let tileAnalysis = null;
+    let selectedTilePatternIds = new Set();
+    let tilePhotoObjectUrl = '';
+    let draft = { winType: '自摸', winnerId: 'player-1', payerId: 'player-2', faan: 3 };
+    let selectedTable = {
+      id: 'selected-table',
+      group: '自選',
+      baseType: '二五雞',
+      discardMode: '半銃',
+      growthMode: '半辣上',
+      capFaan: 8,
+      capAmount: 64,
+      customName: '',
+    };
+
+    function money(value) {
+      return `${value < 0 ? '-' : ''}$${Math.abs(value).toLocaleString('zh-HK')}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function makeId(prefix) {
+      return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    function showMessage(message, title = '提示') {
+      document.getElementById('messageTitle').textContent = title;
+      document.getElementById('messageBody').textContent = message;
+      document.getElementById('messageModal').showModal();
+    }
+
+    function showConfirm(message, onConfirm, title = '確認', actionText = '確認') {
+      pendingConfirmAction = onConfirm;
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmBody').textContent = message;
+      document.getElementById('confirmActionButton').textContent = actionText;
+      document.getElementById('confirmModal').showModal();
+    }
+
+    function closeConfirmModal() {
+      pendingConfirmAction = null;
+      document.getElementById('confirmModal').close();
+    }
+
+    function runConfirmAction() {
+      const action = pendingConfirmAction;
+      closeConfirmModal();
+      if (action) action();
+    }
+
+    function nextWind(value) {
+      return windOrder[(windOrder.indexOf(value) + 1) % windOrder.length];
+    }
+
+    function advanceWindState(state) {
+      const nextDealerSeat = nextWind(state.dealerSeat);
+      return {
+        roundWind: nextDealerSeat === '東' ? nextWind(state.roundWind) : state.roundWind,
+        dealerSeat: nextDealerSeat,
+      };
+    }
+
+    function deriveWindStates() {
+      const states = {};
+      let state = { roundWind: room?.initialRoundWind || '東', dealerSeat: room?.initialDealerSeat || '東' };
+      rounds.slice().sort((a, b) => a.roundNo - b.roundNo).forEach((round) => {
+        states[round.id] = { ...state };
+        const winner = room && room.players.find((player) => player.id === round.winnerId);
+        const winnerSeat = round.winnerSeat || (winner && winner.seat);
+        if (round.winType !== '流局' && winnerSeat !== state.dealerSeat) {
+          state = advanceWindState(state);
+        }
+      });
+      return { states, current: state };
+    }
+
+    function currentWindState() {
+      return deriveWindStates().current;
+    }
+
+    function dealerPlayerLabel(state = currentWindState()) {
+      const dealer = room && room.players.find((player) => player.seat === state.dealerSeat);
+      return `${state.dealerSeat} ${dealer ? displayPlayerName(dealer) : ''}`.trim();
+    }
+
+    function nextRoundNo() {
+      return rounds.reduce((max, round) => Math.max(max, round.roundNo || 0), 0) + 1;
+    }
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      if (id === 'room') renderRoom();
+      if (id === 'record') renderRecord();
+      if (id === 'history') renderHistory();
+      if (id === 'settlement') renderSettlement();
+    }
+
+    function openPresets() {
+      loadFavourite();
+      renderPresets();
+      showScreen('presets');
+    }
+
+    function saveLocal() {
+      localStorage.setItem(roomStorageKey, JSON.stringify({ room, rounds }));
+    }
+
+    function saveFavourite() {
+      localStorage.setItem(tableFavouriteKey, JSON.stringify(selectedTable));
+    }
+
+    function loadNamedTableFavourites() {
+      try {
+        return JSON.parse(localStorage.getItem(namedTableFavouritesKey) || '[]');
+      } catch (error) {
+        localStorage.removeItem(namedTableFavouritesKey);
+        return [];
+      }
+    }
+
+    function saveNamedTableFavourites(items) {
+      localStorage.setItem(namedTableFavouritesKey, JSON.stringify(items));
+    }
+
+    function saveNamedTableFavourite() {
+      const name = document.getElementById('tableFavouriteName').value.trim();
+      if (!name) {
+        showMessage('請先輸入常用枱規名稱。');
+        return;
+      }
+      const setting = getSelectedSetting();
+      const items = loadNamedTableFavourites().filter((item) => item.name !== name);
+      items.unshift({ id: makeId('table'), name, setting });
+      saveNamedTableFavourites(items.slice(0, 12));
+      document.getElementById('tableFavouriteName').value = '';
+      renderTableFavouriteList();
+      showMessage(`已儲存「${name}」。`);
+    }
+
+    function applyNamedTableFavourite(id) {
+      const item = loadNamedTableFavourites().find((entry) => entry.id === id);
+      if (!item) return;
+      selectedTable = {
+        ...selectedTable,
+        baseType: item.setting.baseType,
+        discardMode: item.setting.discardMode,
+        growthMode: item.setting.growthMode,
+        capFaan: item.setting.capFaan,
+        capAmount: item.setting.capAmount,
+        customName: item.setting.name,
+      };
+      saveFavourite();
+      renderPresets();
+    }
+
+    function deleteNamedTableFavourite(id) {
+      saveNamedTableFavourites(loadNamedTableFavourites().filter((item) => item.id !== id));
+      renderTableFavouriteList();
+    }
+
+    function renderTableFavouriteList() {
+      const target = document.getElementById('tableFavouriteList');
+      if (!target) return;
+      const items = loadNamedTableFavourites();
+      target.innerHTML = items.length ? items.map((item) => `
+        <span class="option-item">
+          <button class="chip" onclick="applyNamedTableFavourite('${item.id}')">${escapeHtml(item.name)}</button>
+          <button class="option-help" onclick="deleteNamedTableFavourite('${item.id}')">刪</button>
+        </span>
+      `).join('') : '<p class="muted">未有常用枱規。</p>';
+    }
+
+    function loadFavourite() {
+      const saved = localStorage.getItem(tableFavouriteKey);
+      if (!saved) return;
+      try {
+        const data = JSON.parse(saved);
+        selectedTable = {
+          ...selectedTable,
+          ...data,
+          capFaan: Number(data.capFaan) || selectedTable.capFaan,
+          capAmount: Number(data.capAmount) || selectedTable.capAmount,
+          customName: data.customName || '',
+        };
+      } catch (error) {
+        localStorage.removeItem(tableFavouriteKey);
+      }
+    }
+
+    function restoreRoom() {
+      const saved = localStorage.getItem(roomStorageKey);
+      if (!saved) {
+        showMessage('未有上次房間。');
+        return;
+      }
+      const data = JSON.parse(saved);
+      room = data.room;
+      rounds = data.rounds || [];
+      inviteOpen = false;
+      showScreen('room');
+    }
+
+    function renderPresets() {
+      const list = document.getElementById('presetList');
+      list.innerHTML = '';
+      const board = document.createElement('div');
+      board.className = 'option-board';
+      optionGroups.forEach((group) => {
+        const card = document.createElement('div');
+        card.className = 'option-card';
+        card.innerHTML = `
+          <div class="option-head">
+            <div>
+              <h2>${group.title}</h2>
+              <p class="muted">${getOptionHint(group.key)}</p>
+            </div>
+            <button class="btn small" onclick="openDefinition('${group.title}')">咩嚟？</button>
+          </div>
+          <div class="option-row">
+            ${group.options.map((option) => renderOption(group, option)).join('')}
+          </div>
+        `;
+        board.appendChild(card);
+      });
+      list.appendChild(board);
+      renderSelectedSummary();
+      renderTableFavouriteList();
+    }
+
+    function getOptionHint(key) {
+      const hints = {
+        baseType: '揀今晚打幾大。',
+        discardMode: '揀食糊時邊個俾錢。',
+        growthMode: '揀高番數點樣上。',
+        capFaan: '揀最多計到幾多番。',
+        capAmount: '揀自摸時每位輸家最多俾幾多。',
+      };
+      return hints[key];
+    }
+
+    function renderOption(group, option) {
+      const value = String(option);
+      const label = group.label ? group.label(option) : value;
+      const isActive = String(selectedTable[group.key]) === value;
+      return `<button class="chip ${isActive ? 'active' : ''}" onclick="setTableOption('${group.key}', '${value}')">${label}</button>`;
+    }
+
+    function setTableOption(key, value) {
+      selectedTable[key] = ['capFaan', 'capAmount'].includes(key) ? Number(value) : value;
+      selectedTable.customName = '';
+      saveFavourite();
+      renderPresets();
+    }
+
+    function getSelectedSetting() {
+      const name = selectedTable.customName || `${selectedTable.baseType}・${selectedTable.discardMode}・${selectedTable.growthMode}・${selectedTable.capFaan}番頂 ${money(selectedTable.capAmount)}`;
+      return {
+        id: 'selected-table',
+        group: '自選',
+        name,
+        baseType: selectedTable.baseType,
+        discardMode: selectedTable.discardMode,
+        growthMode: selectedTable.growthMode,
+        capFaan: selectedTable.capFaan,
+        capAmount: selectedTable.capAmount,
+      };
+    }
+
+    function renderSelectedSummary() {
+      const setting = getSelectedSetting();
+      document.getElementById('selectedSettingName').textContent = setting.name;
+      document.getElementById('selectedSettingMeta').textContent = `${setting.capFaan}番頂，每位封頂 ${money(setting.capAmount)}`;
+    }
+
+    function createRoom(presetId) {
+      const preset = presetId ? presets.find((item) => item.id === presetId) : getSelectedSetting();
+      const userName = document.getElementById('userName').value.trim() || '我';
+      const roomName = document.getElementById('roomName').value.trim() || '今晚麻雀局';
+      saveFavourite();
+      room = {
+        id: Math.random().toString(36).slice(2, 8).toUpperCase(),
+        name: roomName,
+        setting: preset,
+        ownerName: userName,
+        initialRoundWind: '東',
+        initialDealerSeat: '東',
+        players: seats.map((seat, index) => ({ id: `player-${index + 1}`, seat, name: '', avatar: '' })),
+      };
+      rounds = [];
+      inviteOpen = false;
+      draft = { winType: '自摸', winnerId: 'player-1', payerId: 'player-2', faan: 3 };
+      saveLocal();
+      showScreen('room');
+    }
+
+    function createRoomFromSelection() {
+      createRoom();
+    }
+
+    function openCustomDialog() {
+      const current = getSelectedSetting();
+      document.getElementById('customName').value = selectedTable.customName || current.name;
+      document.getElementById('customCapFaan').value = current.capFaan;
+      document.getElementById('customCapAmount').value = current.capAmount;
+      document.getElementById('customModal').showModal();
+    }
+
+    function applyCustomSetting() {
+      const customName = document.getElementById('customName').value.trim();
+      const customCapFaan = Number(document.getElementById('customCapFaan').value);
+      const customCapAmount = Number(document.getElementById('customCapAmount').value);
+
+      if (!Number.isFinite(customCapFaan) || customCapFaan <= 0 || !Number.isFinite(customCapAmount) || customCapAmount <= 0) {
+        showMessage('自訂封頂番數同金額要大過 0。');
+        return;
+      }
+
+      selectedTable.customName = customName;
+      selectedTable.capFaan = customCapFaan;
+      selectedTable.capAmount = customCapAmount;
+      saveFavourite();
+      document.getElementById('customModal').close();
+      renderPresets();
+    }
+
+    function joinRoom() {
+      const code = document.getElementById('joinCode').value.trim().toUpperCase();
+      if (room && code === room.id) {
+        showScreen('room');
+        return;
+      }
+      showMessage('電腦 preview 只可以加入本機已開嘅房。');
+    }
+
+    function scanQrPreview() {
+      showMessage('電腦 preview 暫時未開相機掃碼。手機正式版會用相機掃 QR Code 入房。', 'Scan QR Code');
+    }
+
+    function halfUnit(faan) {
+      if (faan <= 4) return 2 ** faan;
+      return faan % 2 === 1 ? 24 * 2 ** ((faan - 5) / 2) : 2 ** (2 + faan / 2);
+    }
+
+    function amountForFaan(setting, faan) {
+      const capped = Math.min(faan, setting.capFaan);
+      const unit = setting.growthMode === '半辣上' ? halfUnit(capped) : 2 ** capped;
+      const capUnit = setting.growthMode === '半辣上' ? halfUnit(setting.capFaan) : 2 ** setting.capFaan;
+      return Math.round((setting.capAmount * unit * 100) / capUnit) / 100;
+    }
+
+    function calc(d) {
+      const amountEach = amountForFaan(room.setting, d.faan);
+      const payments = Object.fromEntries(room.players.map((player) => [player.id, 0]));
+      const losers = room.players.filter((player) => player.id !== d.winnerId).map((player) => player.id);
+      if (d.winType === '自摸') {
+        losers.forEach((id) => { payments[id] -= amountEach; payments[d.winnerId] += amountEach; });
+      }
+      if (d.winType === '食糊') {
+        if (room.setting.discardMode === '全銃') {
+          payments[d.payerId] -= amountEach * 3;
+          payments[d.winnerId] += amountEach * 3;
+        } else {
+          losers.forEach((id) => {
+            const pay = id === d.payerId ? amountEach * 2 : amountEach;
+            payments[id] -= pay;
+            payments[d.winnerId] += pay;
+          });
+        }
+      }
+      if (d.winType === '包自摸') {
+        payments[d.payerId] -= amountEach * 3;
+        payments[d.winnerId] += amountEach * 3;
+      }
+      return { amountEach, payments };
+    }
+
+    function totals() {
+      const total = Object.fromEntries(room.players.map((player) => [player.id, 0]));
+      rounds.forEach((round) => room.players.forEach((player) => { total[player.id] += round.payments[player.id] || 0; }));
+      return total;
+    }
+
+    function renderRoom() {
+      if (!room) return;
+      const total = totals();
+      document.getElementById('roomTitle').textContent = room.name;
+      const windState = currentWindState();
+      document.getElementById('inviteTitle').textContent = inviteOpen ? '房號同 QR Code' : '房號同 QR Code 已收起';
+      document.getElementById('roomSetting').textContent = room.setting.name;
+      document.getElementById('inviteToggle').textContent = inviteOpen ? '收起房號 / QR Code' : '顯示房號 / QR Code';
+      document.getElementById('inviteDetails').hidden = !inviteOpen;
+      document.getElementById('roomCode').textContent = inviteOpen ? room.id : '';
+      if (inviteOpen) {
+        document.getElementById('roomQr').src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent('mahjong-score-room://room/' + room.id)}`;
+      } else {
+        document.getElementById('roomQr').removeAttribute('src');
+      }
+      const players = document.getElementById('players');
+      players.innerHTML = '';
+      const center = document.createElement('div');
+      center.className = 'table-center';
+      center.innerHTML = `<span>麻雀枱</span><span class="table-wind">${windState.roundWind}圈・${windState.dealerSeat}局</span>`;
+      players.appendChild(center);
+      room.players.forEach((player) => {
+        const div = document.createElement('div');
+        const isDealer = player.seat === windState.dealerSeat;
+        const dealerBadge = isDealer ? '<span class="dealer-badge">莊</span>' : '';
+        div.className = `table-seat ${seatPosition[player.seat]} ${player.name.trim() ? 'clickable' : ''} ${isDealer ? 'dealer' : ''}`;
+        if (player.name.trim()) {
+          div.tabIndex = 0;
+          div.setAttribute('role', 'button');
+          div.setAttribute('aria-label', `記 ${player.seat} ${displayPlayerName(player)} Win`);
+          div.onclick = () => startRoundForWinner(player.id);
+          div.onkeydown = (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              startRoundForWinner(player.id);
+            }
+          };
+        }
+        div.innerHTML = player.name.trim()
+          ? `<div class="seat-head"><span class="seat-labels"><span class="seat">${player.seat}</span>${dealerBadge}</span><button class="btn small name-edit" onclick="event.stopPropagation(); openSitDialog('${player.id}', true)" title="改名" aria-label="改${player.seat}位名">✎</button></div><button class="avatar-button" onclick="event.stopPropagation(); openAvatarPicker('${player.id}')" aria-label="上傳${player.seat}位頭像">${player.avatar ? `<img src="${player.avatar}" alt="${escapeHtml(player.name)} 頭像" />` : '加頭像'}</button><strong class="player-name">${escapeHtml(player.name)}</strong><div class="seat-total ${total[player.id] >= 0 ? 'pos' : 'neg'}">${seatBalanceText(total[player.id])}</div><div class="seat-actions"><span class="muted">點卡片記 Win</span><button class="btn small" onclick="event.stopPropagation(); leaveSeat('${player.id}')">離座</button></div>`
+          : `<div class="seat-head"><span class="seat-labels"><span class="seat">${player.seat}</span>${dealerBadge}</span><span class="muted">未坐低</span></div><button class="seat-plus" onclick="openSitDialog('${player.id}')"><span>+</span>坐低</button>`;
+        players.appendChild(div);
+      });
+    }
+
+    function toggleInvite() {
+      inviteOpen = !inviteOpen;
+      renderRoom();
+    }
+
+    function displayPlayerName(player) {
+      return player.name && player.name.trim() ? player.name.trim() : '未坐低';
+    }
+
+    function seatBalanceText(value) {
+      return money(value);
+    }
+
+    function startRoundForWinner(winnerId) {
+      const emptySeat = room.players.find((player) => !player.name.trim());
+      if (emptySeat) {
+        showMessage(`要四位都坐低先可以記一鋪。${emptySeat.seat}位仲未有人。`);
+        return;
+      }
+      editingRoundId = null;
+      draft = { winType: '自摸', winnerId, payerId: room.players.find((player) => player.id !== winnerId).id, faan: 3 };
+      openRoundDialog(winnerId);
+    }
+
+    function openAvatarPicker(id) {
+      pendingAvatarPlayerId = id;
+      const input = document.getElementById('avatarInput');
+      input.value = '';
+      input.click();
+    }
+
+    function handleAvatarSelected(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file || !pendingAvatarPlayerId) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        room.players = room.players.map((player) => player.id === pendingAvatarPlayerId ? { ...player, avatar: reader.result } : player);
+        pendingAvatarPlayerId = null;
+        saveLocal();
+        renderRoom();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function openSitDialog(id, isEdit = false) {
+      const player = room.players.find((item) => item.id === id);
+      const defaultName = document.getElementById('userName').value.trim() || room.ownerName || '我';
+      pendingSeatId = id;
+      document.getElementById('sitSeatTitle').textContent = isEdit ? `改${player.seat}位名` : `${player.seat}位坐低`;
+      document.getElementById('sitName').value = isEdit ? player.name : defaultName;
+      document.getElementById('sitActionButton').textContent = isEdit ? '改名' : '坐低';
+      document.getElementById('sitModal').showModal();
+    }
+
+    function applySitSeat() {
+      const name = document.getElementById('sitName').value.trim();
+      if (!pendingSeatId || !name) {
+        showMessage('請輸入名先坐低。');
+        return;
+      }
+      sitAtSeat(pendingSeatId, name);
+      pendingSeatId = null;
+      document.getElementById('sitModal').close();
+    }
+
+    function sitAtSeat(id, name) {
+      room.players = room.players.map((item) => item.id === id ? { ...item, name: name.trim() } : item);
+      saveLocal();
+      renderRoom();
+    }
+
+    function leaveSeat(id) {
+      room.players = room.players.map((player) => player.id === id ? { ...player, name: '' } : player);
+      saveLocal();
+      renderRoom();
+    }
+
+    function openSwapSeatDialog() {
+      const options = room.players.map((player) => `<option value="${player.id}">${player.seat} ${escapeHtml(displayPlayerName(player))}</option>`).join('');
+      document.getElementById('swapSeatA').innerHTML = options;
+      document.getElementById('swapSeatB').innerHTML = options;
+      document.getElementById('swapSeatB').selectedIndex = room.players.length > 1 ? 1 : 0;
+      document.getElementById('swapSeatModal').showModal();
+    }
+
+    function applySwapSeats() {
+      const firstId = document.getElementById('swapSeatA').value;
+      const secondId = document.getElementById('swapSeatB').value;
+      if (firstId === secondId) {
+        showMessage('請揀兩個唔同座位。');
+        return;
+      }
+      const firstPlayer = room.players.find((player) => player.id === firstId);
+      const secondPlayer = room.players.find((player) => player.id === secondId);
+      const firstSeat = firstPlayer.seat;
+      room.players = room.players.map((player) => {
+        if (player.id === firstId) return { ...player, seat: secondPlayer.seat };
+        if (player.id === secondId) return { ...player, seat: firstSeat };
+        return player;
+      });
+      document.getElementById('swapSeatModal').close();
+      saveLocal();
+      renderRoom();
+    }
+
+    function renamePlayer(id, name) {
+      room.players = room.players.map((player) => player.id === id ? { ...player, name } : player);
+      saveLocal();
+      renderRoom();
+    }
+
+    function newRound() {
+      const emptySeat = room.players.find((player) => !player.name.trim());
+      if (emptySeat) {
+        showMessage(`要四位都坐低先可以記一鋪。${emptySeat.seat}位仲未有人。`);
+        return;
+      }
+      editingRoundId = null;
+      draft = { winType: '自摸', winnerId: room.players[0].id, payerId: room.players[1].id, faan: 3 };
+      showScreen('record');
+    }
+
+    function undoLastRound() {
+      if (!rounds.length) {
+        showMessage('未有牌局紀錄可以還原。');
+        return;
+      }
+      const round = rounds[0];
+      showConfirm(`確定要還原第 ${round.roundNo} 鋪？還原後會重新計算莊家同風圈。`, () => {
+        rounds.shift();
+        saveLocal();
+        renderRoom();
+        showMessage(`已還原第 ${round.roundNo} 鋪。`, '還原上一鋪');
+      }, '還原上一鋪？', '還原');
+    }
+
+    function saveDrawRound() {
+      const emptySeat = room.players.find((player) => !player.name.trim());
+      if (emptySeat) {
+        showMessage(`要四位都坐低先可以記流局。${emptySeat.seat}位仲未有人。`);
+        return;
+      }
+      const windState = currentWindState();
+      const payments = Object.fromEntries(room.players.map((player) => [player.id, 0]));
+      rounds.unshift({ id: makeId('round'), roundNo: nextRoundNo(), winType: '流局', faan: 0, amountEach: 0, payments, note: '', dealerSeat: windState.dealerSeat, roundWind: windState.roundWind, updatedAt: new Date().toLocaleString('zh-HK') });
+      saveLocal();
+      renderRoom();
+      showMessage('已經 mark 左依局流局。');
+    }
+
+    function renderRecord() {
+      document.getElementById('recordTitle').textContent = editingRoundId ? '改紀錄' : '記一鋪';
+      const total = totals();
+      document.getElementById('winnerCards').innerHTML = room.players.map((player) => `
+        <button class="winner-card" onclick="openRoundDialog('${player.id}')">
+          <div class="seat-head"><span class="seat">${player.seat}</span><span class="money ${total[player.id] >= 0 ? 'pos' : 'neg'}">${money(total[player.id])}</span></div>
+          <strong class="winner-card-name">${escapeHtml(displayPlayerName(player))}</strong>
+          <span class="muted">點呢個人做贏家</span>
+        </button>
+      `).join('');
+    }
+
+    function openRoundDialog(winnerId) {
+      draft.winnerId = winnerId;
+      if (!draft.payerId || draft.payerId === winnerId) {
+        draft.payerId = room.players.find((player) => player.id !== winnerId).id;
+      }
+      renderRoundDialogOptions();
+      updateRoundDialog();
+      document.getElementById('roundModal').showModal();
+    }
+
+    function renderRoundDialogOptions() {
+      document.getElementById('roundWinType').innerHTML = ['自摸', '食糊', '包自摸'].map((value) => `<option value="${value}">${value}</option>`).join('');
+      document.getElementById('roundFaan').innerHTML = Array.from({ length: 14 }, (_, index) => `<option value="${index}">${index}番</option>`).join('');
+      document.getElementById('roundWinType').value = draft.winType;
+      document.getElementById('roundFaan').value = String(draft.faan);
+      document.getElementById('roundNote').value = draft.note || '';
+    }
+
+    function updateRoundDialog() {
+      const winType = document.getElementById('roundWinType').value;
+      const faan = Number(document.getElementById('roundFaan').value);
+      draft.winType = winType;
+      draft.faan = faan;
+      draft.note = document.getElementById('roundNote').value.trim();
+
+      const payerField = document.getElementById('roundPayerField');
+      const payerSelect = document.getElementById('roundPayer');
+      const selectedPayerId = payerSelect.value || draft.payerId;
+      const payerOptions = room.players.filter((player) => player.id !== draft.winnerId);
+      payerField.style.display = winType === '自摸' ? 'none' : 'grid';
+      payerField.firstChild.textContent = winType === '包自摸' ? '邊個包自摸？' : '邊個出銃？';
+      payerSelect.innerHTML = payerOptions.map((player) => `<option value="${player.id}">${player.seat} ${escapeHtml(displayPlayerName(player))}</option>`).join('');
+      draft.payerId = payerOptions.some((player) => player.id === selectedPayerId) ? selectedPayerId : payerOptions[0].id;
+      payerSelect.value = draft.payerId;
+
+      const winner = room.players.find((player) => player.id === draft.winnerId);
+      document.getElementById('roundModalTitle').textContent = `${winner.seat} ${displayPlayerName(winner)} Win`;
+      renderRoundPreview();
+    }
+
+    function renderRoundPreview() {
+      const result = calc(draft);
+      document.getElementById('roundAmountEach').textContent = `每位自摸金額：${money(result.amountEach)}`;
+      document.getElementById('roundPreviewRows').innerHTML = room.players.map((player) => `<div class="money-row"><span class="seat">${player.seat}</span><strong>${displayPlayerName(player)}</strong><span class="money ${result.payments[player.id] >= 0 ? 'pos' : 'neg'}">${money(result.payments[player.id])}</span></div>`).join('');
+    }
+
+    function openTileCamera() {
+      updateRoundDialog();
+      const input = document.getElementById('tilePhotoInput');
+      input.value = '';
+      input.click();
+    }
+
+    async function handleTilePhotoSelected(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      if (tilePhotoObjectUrl) URL.revokeObjectURL(tilePhotoObjectUrl);
+      tilePhotoObjectUrl = URL.createObjectURL(file);
+      selectedTilePatternIds = new Set();
+      tileAnalysis = null;
+
+      const preview = document.getElementById('tilePhotoPreview');
+      preview.src = tilePhotoObjectUrl;
+      preview.hidden = false;
+      document.getElementById('tileAnalyzerStatus').textContent = '分析緊張相...';
+      document.getElementById('tileAnalysisResult').innerHTML = '<p class="muted">正在讀取相片同準備計番。</p>';
+      renderTilePatternChips();
+      document.getElementById('tileAnalyzerModal').showModal();
+
+      tileAnalysis = await analyzeTilePhoto(file);
+      renderTileAnalysisResult();
+    }
+
+    async function analyzeTilePhoto(file) {
+      const endpoint = localStorage.getItem('mahjong-tile-vision-endpoint') || '/api/analyze-tiles';
+      const image = await readFileAsDataUrl(file);
+      const windState = currentWindState();
+      const winner = room.players.find((player) => player.id === draft.winnerId);
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image,
+            imageName: file.name,
+            imageType: file.type,
+            context: {
+              tableSetting: room.setting,
+              winType: draft.winType,
+              currentFaan: draft.faan,
+              roundWind: windState.roundWind,
+              dealerSeat: windState.dealerSeat,
+              winnerSeat: winner?.seat || '',
+              winnerName: winner ? displayPlayerName(winner) : '',
+            },
+          }),
+        });
+        if (!response.ok) throw new Error(`Vision endpoint HTTP ${response.status}`);
+        return normalizeTileAnalysis(await response.json());
+      } catch (error) {
+        return localTilePhotoEstimate(`Vision API 暫時連唔到：${error.message}`);
+      }
+    }
+
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error || new Error('讀相失敗'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function normalizeTileAnalysis(data) {
+      const faan = Math.max(0, Math.min(13, Number(data.faan ?? draft.faan ?? 0)));
+      const reasons = Array.isArray(data.reasons) ? data.reasons : [];
+      const patterns = Array.isArray(data.patterns) ? data.patterns : [];
+      const tiles = Array.isArray(data.tiles) ? data.tiles : [];
+      const warnings = Array.isArray(data.warnings) ? data.warnings : [];
+      return {
+        source: data.source || 'vision-api',
+        confidence: data.confidence || '未知',
+        faan,
+        baseFaan: faan,
+        reasons: reasons.length ? reasons : ['Vision API 回傳咗番數，但未提供詳細原因。'],
+        patterns,
+        tiles,
+        warnings,
+      };
+    }
+
+    function localTilePhotoEstimate(extraReason = '') {
+      const baseline = Math.max(0, Math.min(13, Number(document.getElementById('roundFaan').value || draft.faan || 0)));
+      return {
+        source: 'local-fallback',
+        confidence: '待接 AI',
+        faan: baseline,
+        baseFaan: baseline,
+        reasons: [
+          '已收到食糊牌相。',
+          '目前 PWA 未連接麻雀牌視覺模型，所以未能可靠由相片直接認出全部牌。',
+          `暫時以表單目前 ${baseline}番 作基準；可補選下方牌型，Accept 後仍然可以手動改。`,
+          extraReason,
+        ].filter(Boolean),
+        patterns: [],
+        tiles: [],
+        warnings: ['未接駁 Vision API，暫時未能由相片認出牌面。'],
+      };
+    }
+
+    function currentTileAnalysisFaan() {
+      const base = tileAnalysis ? tileAnalysis.baseFaan : 0;
+      const extra = Array.from(selectedTilePatternIds).reduce((sum, id) => {
+        const pattern = tilePatternOptions.find((item) => item.id === id);
+        return sum + (pattern ? pattern.faan : 0);
+      }, 0);
+      return Math.max(0, Math.min(13, base + extra));
+    }
+
+    function renderTilePatternChips() {
+      document.getElementById('tilePatternChips').innerHTML = tilePatternOptions.map((pattern) => `
+        <button class="chip ${selectedTilePatternIds.has(pattern.id) ? 'active' : ''}" onclick="toggleTilePattern('${pattern.id}')">${pattern.name} +${pattern.faan}</button>
+      `).join('');
+    }
+
+    function toggleTilePattern(id) {
+      if (selectedTilePatternIds.has(id)) {
+        selectedTilePatternIds.delete(id);
+      } else {
+        selectedTilePatternIds.add(id);
+      }
+      renderTilePatternChips();
+      renderTileAnalysisResult();
+    }
+
+    function renderTileAnalysisResult() {
+      if (!tileAnalysis) return;
+      const selectedPatterns = tilePatternOptions.filter((pattern) => selectedTilePatternIds.has(pattern.id));
+      const patternReasons = selectedPatterns.map((pattern) => `${pattern.name}：${pattern.reason}`);
+      const apiPatterns = (tileAnalysis.patterns || []).map((pattern) => `${pattern.name || '牌型'}：${pattern.reason || `${pattern.faan || 0}番`}`);
+      const reasons = [...tileAnalysis.reasons, ...apiPatterns, ...patternReasons];
+      const faan = currentTileAnalysisFaan();
+      const tiles = (tileAnalysis.tiles || []).map((tile) => typeof tile === 'string' ? tile : (tile.label || tile.code || tile.name || '未知'));
+      const warnings = tileAnalysis.warnings || [];
+      document.getElementById('tileAnalyzerStatus').textContent = tileAnalysis.source === 'local-fallback' ? '相片已加入，等你確認番數。' : 'AI 分析完成，請確認結果。';
+      document.getElementById('tileAnalysisResult').innerHTML = `
+        <div class="analysis-warning">${tileAnalysis.source === 'local-fallback' ? '提示：而家係本機 fallback flow，真正自動認牌需要接駁 vision API。' : `信心：${escapeHtml(tileAnalysis.confidence)}`}</div>
+        <div class="analysis-total">${faan}番</div>
+        ${tiles.length ? `<div><strong>AI 認到嘅牌</strong><div class="tile-chip-list">${tiles.map((tile) => `<span class="tile-chip">${escapeHtml(tile)}</span>`).join('')}</div></div>` : ''}
+        <ul class="analysis-reasons">${reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join('')}</ul>
+        ${warnings.length ? `<div class="analysis-warning">${warnings.map((warning) => escapeHtml(warning)).join('<br>')}</div>` : ''}
+      `;
+    }
+
+    function acceptTileAnalysis() {
+      if (!tileAnalysis) return;
+      const faan = currentTileAnalysisFaan();
+      document.getElementById('roundFaan').value = String(faan);
+      const selectedPatterns = tilePatternOptions.filter((pattern) => selectedTilePatternIds.has(pattern.id));
+      const details = [
+        `影相計番建議：${faan}番`,
+        ...tileAnalysis.reasons,
+        ...(tileAnalysis.tiles || []).length ? [`AI 認到：${(tileAnalysis.tiles || []).map((tile) => typeof tile === 'string' ? tile : (tile.label || tile.code || tile.name || '未知')).join('、')}`] : [],
+        ...selectedPatterns.map((pattern) => `${pattern.name}+${pattern.faan}`),
+      ];
+      const note = document.getElementById('roundNote');
+      note.value = note.value.trim() ? `${note.value.trim()}\n${details.join('；')}` : details.join('；');
+      updateRoundDialog();
+      document.getElementById('tileAnalyzerModal').close();
+      showMessage(`已套用 ${faan}番，你仍然可以手動改。`, '影相計番');
+    }
+
+    function rejectTileAnalysis() {
+      document.getElementById('tileAnalyzerModal').close();
+      showMessage('已保留原本手動番數。', '影相計番');
+    }
+
+    function saveRoundFromDialog() {
+      updateRoundDialog();
+      saveRound();
+    }
+
+    function renderChips(targetId, values, selected, onPick, labeler = (value) => value) {
+      document.getElementById(targetId).innerHTML = values.map((value) => `<button class="chip ${value === selected ? 'active' : ''}" onclick="chipPick('${targetId}', '${value}')">${labeler(value)}</button>`).join('');
+      window[`pick_${targetId}`] = onPick;
+    }
+
+    function chipPick(targetId, value) {
+      window[`pick_${targetId}`](Number.isNaN(Number(value)) ? value : Number(value));
+    }
+
+    function playerLabel(id) {
+      const player = room.players.find((item) => item.id === id);
+      return `${player.seat} ${displayPlayerName(player)}`;
+    }
+
+    function saveRound() {
+      if ((draft.winType === '食糊' || draft.winType === '包自摸') && draft.payerId === draft.winnerId) {
+        showMessage('出銃者或包自摸者唔可以同贏家一樣。');
+        return;
+      }
+      const result = calc(draft);
+      const windState = currentWindState();
+      const winner = room.players.find((player) => player.id === draft.winnerId);
+      if (editingRoundId) {
+        rounds = rounds.map((round) => round.id === editingRoundId ? { ...round, ...draft, ...result, winnerSeat: winner.seat, updatedAt: new Date().toLocaleString('zh-HK') } : round);
+      } else {
+        rounds.unshift({ id: makeId('round'), roundNo: nextRoundNo(), ...draft, ...result, winnerSeat: winner.seat, dealerSeat: windState.dealerSeat, roundWind: windState.roundWind, updatedAt: new Date().toLocaleString('zh-HK') });
+      }
+      saveLocal();
+      const roundModal = document.getElementById('roundModal');
+      if (roundModal.open) roundModal.close();
+      showScreen('room');
+    }
+
+    function renderHistory() {
+      const list = document.getElementById('historyList');
+      if (!rounds.length) {
+        list.innerHTML = '<div class="panel muted">未有紀錄，打完第一鋪就會喺度見到。</div>';
+        return;
+      }
+      const windStates = deriveWindStates().states;
+      list.innerHTML = rounds.map((round) => {
+        const windState = windStates[round.id] || { roundWind: round.roundWind || '東', dealerSeat: round.dealerSeat || '東' };
+        if (round.winType === '流局') {
+          return `<div class="history-card">
+            <h3>第 ${round.roundNo} 鋪：流局</h3>
+            <p class="muted">${windState.roundWind}圈・${windState.dealerSeat}局 · 無人輸贏 · 最後修改：${round.updatedAt}</p>
+            ${round.note ? `<p>${escapeHtml(round.note)}</p>` : ''}
+            <div class="pills">${room.players.map((player) => `<span class="pill pos">${displayPlayerName(player)} ${money(0)}</span>`).join('')}</div>
+            <div class="btns"><button class="btn secondary" onclick="openNoteDialog('${round.id}')">修改備註</button><button class="btn danger" onclick="deleteRound('${round.id}')">刪除流局</button></div>
+          </div>`;
+        }
+        const winner = room.players.find((player) => player.id === round.winnerId);
+        const payer = room.players.find((player) => player.id === round.payerId);
+        return `<div class="history-card">
+          <h3>第 ${round.roundNo} 鋪：${displayPlayerName(winner)} ${round.winType} ${round.faan}番</h3>
+          <p class="muted">${windState.roundWind}圈・${windState.dealerSeat}局 · ${payer && round.winType !== '自摸' ? (round.winType === '食糊' ? '出銃：' : '包自摸：') + displayPlayerName(payer) + ' · ' : ''}最後修改：${round.updatedAt}</p>
+          ${round.note ? `<p>${escapeHtml(round.note)}</p>` : ''}
+          <div class="pills">${room.players.map((player) => `<span class="pill ${round.payments[player.id] >= 0 ? 'pos' : 'neg'}">${displayPlayerName(player)} ${money(round.payments[player.id])}</span>`).join('')}</div>
+          <div class="btns"><button class="btn secondary" onclick="editRound('${round.id}')">修改</button><button class="btn danger" onclick="deleteRound('${round.id}')">刪除</button></div>
+        </div>`;
+      }).join('');
+    }
+
+    function editRound(id) {
+      const round = rounds.find((item) => item.id === id);
+      editingRoundId = id;
+      draft = { winType: round.winType, winnerId: round.winnerId, payerId: round.payerId || room.players.find((player) => player.id !== round.winnerId).id, faan: round.faan, note: round.note || '', dealerSeat: round.dealerSeat, roundWind: round.roundWind };
+      showScreen('record');
+      openRoundDialog(draft.winnerId);
+    }
+
+    function deleteRound(id) {
+      const round = rounds.find((item) => item.id === id);
+      const isDraw = round && round.winType === '流局';
+      showConfirm(isDraw ? '確定要刪除呢鋪流局？刪除後會重新計算莊家同風圈。' : '確定要刪呢鋪？刪除後會重新計算莊家同風圈。', () => {
+        rounds = rounds.filter((item) => item.id !== id);
+        saveLocal();
+        renderHistory();
+      }, isDraw ? '刪除流局？' : '刪除紀錄？', isDraw ? '刪除流局' : '刪除');
+    }
+
+    function openNoteDialog(id) {
+      const round = rounds.find((item) => item.id === id);
+      if (!round) return;
+      pendingNoteRoundId = id;
+      document.getElementById('historyNote').value = round.note || '';
+      document.getElementById('noteModal').showModal();
+    }
+
+    function applyHistoryNote() {
+      const note = document.getElementById('historyNote').value.trim();
+      rounds = rounds.map((round) => round.id === pendingNoteRoundId ? { ...round, note, updatedAt: new Date().toLocaleString('zh-HK') } : round);
+      pendingNoteRoundId = null;
+      document.getElementById('noteModal').close();
+      saveLocal();
+      renderHistory();
+    }
+
+    function renderSettlement() {
+      const total = totals();
+      document.getElementById('settlementTotals').innerHTML = room.players.map((player) => `<div class="history-row"><span class="seat">${player.seat}</span><strong>${displayPlayerName(player)}</strong><span class="money ${total[player.id] >= 0 ? 'pos' : 'neg'}">${money(total[player.id])}</span></div>`).join('');
+      const debtors = room.players.map((player) => ({ player, amount: total[player.id] })).filter((item) => item.amount < 0).sort((a, b) => a.amount - b.amount);
+      const creditors = room.players.map((player) => ({ player, amount: total[player.id] })).filter((item) => item.amount > 0).sort((a, b) => b.amount - a.amount);
+      const lines = [];
+      let di = 0;
+      let ci = 0;
+      while (di < debtors.length && ci < creditors.length) {
+        const amount = Math.min(Math.abs(debtors[di].amount), creditors[ci].amount);
+        lines.push(`${displayPlayerName(debtors[di].player)} 俾 ${displayPlayerName(creditors[ci].player)} ${money(amount)}`);
+        debtors[di].amount += amount;
+        creditors[ci].amount -= amount;
+        if (Math.abs(debtors[di].amount) < 0.01) di += 1;
+        if (creditors[ci].amount < 0.01) ci += 1;
+      }
+      document.getElementById('settlementLines').innerHTML = lines.length ? lines.map((line) => `<p style="font-size: 20px; font-weight: 900; color: var(--green); line-height: 1.7;">${line}</p>`).join('') : '<p class="muted">暫時唔使找數。</p>';
+    }
+
+    function settlementLines() {
+      const total = totals();
+      const debtors = room.players.map((player) => ({ player, amount: total[player.id] })).filter((item) => item.amount < 0).sort((a, b) => a.amount - b.amount);
+      const creditors = room.players.map((player) => ({ player, amount: total[player.id] })).filter((item) => item.amount > 0).sort((a, b) => b.amount - a.amount);
+      const lines = [];
+      let debtorIndex = 0;
+      let creditorIndex = 0;
+      while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
+        const amount = Math.min(Math.abs(debtors[debtorIndex].amount), creditors[creditorIndex].amount);
+        lines.push(`${displayPlayerName(debtors[debtorIndex].player)} 俾 ${displayPlayerName(creditors[creditorIndex].player)} ${money(amount)}`);
+        debtors[debtorIndex].amount += amount;
+        creditors[creditorIndex].amount -= amount;
+        if (Math.abs(debtors[debtorIndex].amount) < 0.01) debtorIndex += 1;
+        if (creditors[creditorIndex].amount < 0.01) creditorIndex += 1;
+      }
+      return lines;
+    }
+
+    function buildSettlementText() {
+      const total = totals();
+      const windState = currentWindState();
+      const totalsText = room.players.map((player) => `${player.seat} ${displayPlayerName(player)} ${total[player.id] >= 0 ? '+' : ''}${money(total[player.id])}`).join('，');
+      const transferLines = settlementLines();
+      return [
+        `${room.name} 結算`,
+        `枱規：${room.setting.name}`,
+        `風圈：${windState.roundWind}圈・${windState.dealerSeat}局｜莊：${dealerPlayerLabel(windState)}`,
+        `總數：${totalsText}`,
+        transferLines.length ? `找數：${transferLines.join('；')}` : '找數：暫時唔使找數。',
+      ].join('\n');
+    }
+
+    function openExportSettlement() {
+      document.getElementById('exportSettlementText').value = buildSettlementText();
+      document.getElementById('exportModal').showModal();
+    }
+
+    async function copySettlementText() {
+      const text = document.getElementById('exportSettlementText').value;
+      try {
+        await navigator.clipboard.writeText(text);
+        showMessage('已 copy 結算文字，可以貼去 WhatsApp。', '匯出結算');
+      } catch (error) {
+        document.getElementById('exportSettlementText').select();
+        showMessage('瀏覽器未俾權限自動 copy，已幫你選取文字，可以手動 Ctrl+C。', '匯出結算');
+      }
+    }
+
+    function openDefinition(key) {
+      const modal = document.getElementById('definitionModal');
+      const body = document.getElementById('definitionBody');
+      document.getElementById('definitionTitle').textContent = key === '總覽' ? '枱規解釋' : key;
+      let keys;
+      if (definitionGroups[key]) {
+        keys = definitionGroups[key];
+      } else if (key === '包自摸') {
+        keys = ['包自摸'];
+      } else if (definitions[key]) {
+        keys = [key];
+      } else {
+        const preset = presets.find((item) => item.id === key);
+        keys = preset ? [preset.baseType, preset.discardMode, preset.growthMode, '封頂'] : [];
+      }
+      body.innerHTML = keys.map((item) => `<div class="def-block"><div class="def-title">${item}</div><p>${definitions[item]}</p></div>`).join('');
+      modal.showModal();
+    }
+
+    loadFavourite();
+    renderPresets();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
