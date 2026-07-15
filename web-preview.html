@@ -224,11 +224,25 @@
     }
 
     .toolbar {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
       align-items: center;
       gap: 12px;
       margin-bottom: 14px;
+    }
+
+    .toolbar > :first-child {
+      justify-self: start;
+    }
+
+    .toolbar > h2 {
+      justify-self: center;
+      margin-bottom: 0;
+      text-align: center;
+    }
+
+    .toolbar > :last-child {
+      justify-self: end;
     }
 
     .screen {
@@ -393,6 +407,11 @@
       gap: 16px;
       align-items: center;
       margin-top: 18px;
+    }
+
+    .room-actions {
+      justify-content: center;
+      margin-top: 14px;
     }
 
     .table-center {
@@ -815,6 +834,15 @@
         padding: 14px;
       }
 
+      .toolbar {
+        grid-template-columns: minmax(72px, 1fr) auto minmax(72px, 1fr);
+      }
+
+      .toolbar .btn {
+        min-height: 42px;
+        padding: 0 14px;
+      }
+
       .room-top,
       .invite-details,
       .player-row,
@@ -830,17 +858,85 @@
       }
 
       .seat-table {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto;
+        grid-template-columns: minmax(88px, 0.9fr) minmax(132px, 1.35fr) minmax(88px, 0.9fr);
+        grid-template-rows: auto auto auto;
+        gap: 10px;
+        align-items: stretch;
       }
 
-      .table-center,
-      .table-seat.north,
-      .table-seat.east,
-      .table-seat.south,
+      .table-center {
+        grid-column: 2;
+        grid-row: 2;
+        min-height: 132px;
+        border-radius: 20px;
+        font-size: 15px;
+      }
+
+      .table-seat {
+        min-height: 108px;
+        padding: 10px;
+        border-radius: 14px;
+      }
+
+      .table-seat.north {
+        grid-column: 2;
+        grid-row: 1;
+      }
+
+      .table-seat.east {
+        grid-column: 3;
+        grid-row: 2;
+      }
+
+      .table-seat.south {
+        grid-column: 2;
+        grid-row: 3;
+      }
+
       .table-seat.west {
         grid-column: 1;
-        grid-row: auto;
+        grid-row: 2;
+      }
+
+      .seat-head {
+        align-items: start;
+      }
+
+      .table-seat.east .seat-head,
+      .table-seat.west .seat-head {
+        display: grid;
+        justify-items: center;
+      }
+
+      .table-seat.east .avatar-button,
+      .table-seat.west .avatar-button,
+      .table-seat.east .seat-actions,
+      .table-seat.west .seat-actions,
+      .table-seat.east .seat-total,
+      .table-seat.west .seat-total {
+        display: none;
+      }
+
+      .table-seat.east .player-name,
+      .table-seat.west .player-name {
+        font-size: 15px;
+        white-space: normal;
+      }
+
+      .table-seat.east .seat-plus,
+      .table-seat.west .seat-plus {
+        min-height: 64px;
+        padding: 4px;
+      }
+
+      .room-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .room-actions .btn {
+        min-height: 42px;
+        padding: 0 10px;
       }
 
       .qr {
@@ -947,7 +1043,7 @@
           <img id="roomQr" class="qr" alt="房間 QR Code" />
         </div>
       </div>
-      <div class="btns" style="margin-top: 14px;">
+      <div class="btns room-actions">
         <button class="btn secondary" onclick="undoLastRound()">還原上一鋪</button>
         <button class="btn secondary" onclick="saveDrawRound()">流局</button>
         <button class="btn secondary" onclick="openSwapSeatDialog()">調位</button>
