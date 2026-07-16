@@ -736,6 +736,33 @@
       line-height: 1.5;
     }
 
+    .qr-scanner {
+      min-height: 280px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #0e201d;
+      color: #fffaf0;
+    }
+
+    .qr-scanner video,
+    .qr-scanner canvas {
+      max-width: 100%;
+      border-radius: 14px;
+    }
+
+    .qr-scan-status {
+      min-height: 44px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f8efd9;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
     .tile-chip-list {
       display: flex;
       flex-wrap: wrap;
@@ -1016,7 +1043,7 @@
           <button class="btn" onclick="joinRoom()">入房</button>
           <button class="btn secondary" onclick="scanQrPreview()">Scan QR Code</button>
         </div>
-        <p class="muted">可以輸入房號，或者喺手機正式版用相機掃 QR Code。</p>
+        <p class="muted">可以輸入房號，或者掃房主顯示嘅 QR Code 入房。</p>
       </div>
     </section>
 
@@ -1182,6 +1209,17 @@
     </div>
   </dialog>
 
+  <dialog id="qrScannerModal">
+    <div class="modal-inner">
+      <h2>Scan QR Code</h2>
+      <div class="qr-scanner" id="qrReader"></div>
+      <p class="qr-scan-status" id="qrScanStatus">準備開相機，請容許 Safari 使用 Camera。</p>
+      <div class="btns">
+        <button class="btn secondary" onclick="stopQrScanner()">關閉</button>
+      </div>
+    </div>
+  </dialog>
+
   <dialog id="messageModal">
     <div class="modal-inner">
       <h2 id="messageTitle">提示</h2>
@@ -1313,6 +1351,9 @@
     let tileAnalysis = null;
     let selectedTilePatternIds = new Set();
     let tilePhotoObjectUrl = '';
+    let qrScanner = null;
+    let qrScannerActive = false;
+    let qrScannerLoader = null;
     let draft = { winType: '自摸', winnerId: 'player-1', payerId: 'player-2', faan: 3 };
     let selectedTable = {
       id: 'selected-table',
@@ -1345,7 +1386,8 @@
     function showMessage(message, title = '提示') {
       document.getElementById('messageTitle').textContent = title;
       document.getElementById('messageBody').textContent = message;
-      document.getElementById('messageModal').showModal();
+      const modal = document.getElementById('messageModal');
+      if (!modal.open) modal.showModal();
     }
 
     function showConfirm(message, onConfirm, title = '確認', actionText = '確認') {
@@ -1617,6 +1659,88 @@
       createRoom();
     }
 
+    function encodeInvitePayload(payload) {
+      const bytes = new TextEncoder().encode(JSON.stringify(payload));
+      let binary = '';
+      bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+      return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+    }
+
+    function decodeInvitePayload(payload) {
+      const normalized = payload.replaceAll('-', '+').replaceAll('_', '/').padEnd(Math.ceil(payload.length / 4) * 4, '=');
+      const binary = atob(normalized);
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      return JSON.parse(new TextDecoder().decode(bytes));
+    }
+
+    function buildRoomInvite() {
+      return {
+        v: 1,
+        id: room.id,
+        name: room.name,
+        setting: room.setting,
+        initialRoundWind: room.initialRoundWind || '東',
+        initialDealerSeat: room.initialDealerSeat || '東',
+      };
+    }
+
+    function buildRoomInviteUrl() {
+      const base = `${location.origin}${location.pathname}`;
+      return `${base}#join=${encodeInvitePayload(buildRoomInvite())}`;
+    }
+
+    function parseRoomInvite(rawValue) {
+      const raw = String(rawValue || '').trim();
+      if (!raw) return null;
+
+      const directCode = raw.match(/^[A-Z0-9]{4,10}$/i);
+      if (directCode) return { code: raw.toUpperCase() };
+
+      const schemeMatch = raw.match(/mahjong-score-room:\/\/room\/([A-Z0-9]+)/i);
+      if (schemeMatch) return { code: schemeMatch[1].toUpperCase() };
+
+      try {
+        const url = new URL(raw);
+        const joinPayload = url.hash.match(/[#&]join=([^&]+)/)?.[1] || url.searchParams.get('join');
+        if (joinPayload) return { invite: decodeInvitePayload(decodeURIComponent(joinPayload)) };
+        const roomCode = url.searchParams.get('room') || url.hash.match(/[#&]room=([^&]+)/)?.[1];
+        if (roomCode) return { code: roomCode.toUpperCase() };
+      } catch (error) {
+      }
+
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.id && parsed.setting) return { invite: parsed };
+      } catch (error) {
+      }
+
+      return null;
+    }
+
+    function joinRoomFromInvite(invite, source = 'QR Code') {
+      if (!invite || !invite.id || !invite.setting) {
+        showMessage('呢個 QR Code 唔似係有效嘅雀數房間邀請。', 'Scan QR Code');
+        return false;
+      }
+
+      room = {
+        id: String(invite.id).toUpperCase(),
+        name: invite.name || '麻雀局',
+        setting: invite.setting,
+        ownerName: invite.ownerName || '',
+        initialRoundWind: invite.initialRoundWind || '東',
+        initialDealerSeat: invite.initialDealerSeat || '東',
+        players: seats.map((seat, index) => ({ id: `player-${index + 1}`, seat, name: '', avatar: '' })),
+      };
+      rounds = [];
+      inviteOpen = false;
+      draft = { winType: '自摸', winnerId: 'player-1', payerId: 'player-2', faan: 3 };
+      saveLocal();
+      showScreen('room');
+      showMessage(`已用 ${source} 加入「${room.name}」。呢個版本係本機房間副本，未有即時同步。`, '入房成功');
+      return true;
+    }
+
     function openCustomDialog() {
       const current = getSelectedSetting();
       document.getElementById('customName').value = selectedTable.customName || current.name;
@@ -1644,16 +1768,100 @@
     }
 
     function joinRoom() {
-      const code = document.getElementById('joinCode').value.trim().toUpperCase();
+      const raw = document.getElementById('joinCode').value.trim();
+      const parsed = parseRoomInvite(raw);
+      if (parsed?.invite && joinRoomFromInvite(parsed.invite, '輸入內容')) return;
+      const code = (parsed?.code || raw).toUpperCase();
       if (room && code === room.id) {
         showScreen('room');
         return;
       }
-      showMessage('電腦 preview 只可以加入本機已開嘅房。');
+      showMessage('未搵到呢個本機房間。請掃房主顯示嘅新版 QR Code，或者先喺呢部機開房。', '入房');
     }
 
-    function scanQrPreview() {
-      showMessage('電腦 preview 暫時未開相機掃碼。手機正式版會用相機掃 QR Code 入房。', 'Scan QR Code');
+    async function scanQrPreview() {
+      await openQrScanner();
+    }
+
+    async function loadQrScannerLibrary() {
+      if (window.Html5Qrcode) return;
+      if (qrScannerLoader) return qrScannerLoader;
+      qrScannerLoader = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+        script.async = true;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('QR scanner library 載入失敗'));
+        document.head.appendChild(script);
+      });
+      return qrScannerLoader;
+    }
+
+    async function openQrScanner() {
+      const modal = document.getElementById('qrScannerModal');
+      const reader = document.getElementById('qrReader');
+      const status = document.getElementById('qrScanStatus');
+      reader.innerHTML = '';
+      status.textContent = '準備開相機，請容許 Safari 使用 Camera。';
+      modal.showModal();
+
+      if (!window.isSecureContext) {
+        status.textContent = '相機掃描需要 HTTPS。請用 GitHub Pages 條 https link 開 app。';
+        return;
+      }
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        status.textContent = '呢個瀏覽器未支援相機掃描。可以先手動輸入房號。';
+        return;
+      }
+
+      try {
+        await loadQrScannerLibrary();
+        qrScanner = new Html5Qrcode('qrReader');
+        qrScannerActive = true;
+        const size = Math.max(220, Math.min(300, window.innerWidth - 96));
+        await qrScanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: size, height: size }, aspectRatio: 1 },
+          (decodedText) => handleQrScanResult(decodedText),
+          () => {}
+        );
+        status.textContent = '請將房主 QR Code 放入框內。';
+      } catch (error) {
+        qrScannerActive = false;
+        status.textContent = `開相機失敗：${error.message || error}。可以先手動輸入房號。`;
+      }
+    }
+
+    async function stopQrScanner() {
+      const modal = document.getElementById('qrScannerModal');
+      try {
+        if (qrScanner && qrScannerActive) await qrScanner.stop();
+        if (qrScanner) qrScanner.clear();
+      } catch (error) {
+      }
+      qrScanner = null;
+      qrScannerActive = false;
+      document.getElementById('qrReader').innerHTML = '';
+      if (modal.open) modal.close();
+    }
+
+    async function handleQrScanResult(decodedText) {
+      const parsed = parseRoomInvite(decodedText);
+      const status = document.getElementById('qrScanStatus');
+      if (!parsed) {
+        status.textContent = '掃到 QR Code，但唔係雀數房間邀請。';
+        return;
+      }
+
+      await stopQrScanner();
+      if (parsed.invite) {
+        joinRoomFromInvite(parsed.invite, 'QR Code');
+        return;
+      }
+
+      document.getElementById('joinCode').value = parsed.code;
+      joinRoom();
     }
 
     function halfUnit(faan) {
@@ -1711,7 +1919,7 @@
       document.getElementById('inviteDetails').hidden = !inviteOpen;
       document.getElementById('roomCode').textContent = inviteOpen ? room.id : '';
       if (inviteOpen) {
-        document.getElementById('roomQr').src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent('mahjong-score-room://room/' + room.id)}`;
+        document.getElementById('roomQr').src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(buildRoomInviteUrl())}`;
       } else {
         document.getElementById('roomQr').removeAttribute('src');
       }
@@ -2314,8 +2522,17 @@
       modal.showModal();
     }
 
+    function handleInviteFromLocation() {
+      const parsed = parseRoomInvite(window.location.href);
+      if (!parsed?.invite) return;
+      joinRoomFromInvite(parsed.invite, '邀請連結');
+      history.replaceState(null, '', `${location.pathname}${location.search}`);
+    }
+
     loadFavourite();
     renderPresets();
+    handleInviteFromLocation();
+    window.addEventListener('hashchange', handleInviteFromLocation);
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
