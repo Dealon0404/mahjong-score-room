@@ -45,6 +45,10 @@ localStorage.setItem('mahjong-tile-vision-endpoint', 'https://your-api.vercel.ap
 
 注意：AI 會讀牌同建議番數，但麻雀有啲番要靠上下文，例如門清、自摸、圈風、位風、花牌，所以 app 仍保留 Accept / Reject / 手動改。
 
+### YOLO / CV Research
+
+已整理 GitHub 上麻雀牌 object detection / YOLO / CV 相關候選 repo、license 風險同建議接法，見 [MAHJONG_CV_RESEARCH.md](MAHJONG_CV_RESEARCH.md)。
+
 ## 本機開發
 
 如果你已經安裝 Node.js：
