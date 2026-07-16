@@ -1326,6 +1326,7 @@
     const roomStorageKey = 'mahjong-web-preview';
     const tableFavouriteKey = 'mahjong-table-favourite';
     const namedTableFavouritesKey = 'mahjong-table-favourite-list';
+    const playerAvatarKey = 'mahjong-player-avatars';
 
     const seats = ['東', '南', '西', '北'];
     const seatPosition = { 東: 'east', 南: 'south', 西: 'west', 北: 'north' };
@@ -1468,6 +1469,44 @@
       localStorage.setItem(roomStorageKey, JSON.stringify({ room, rounds }));
     }
 
+    function normalizePlayerName(name) {
+      return String(name || '').trim().toLowerCase();
+    }
+
+    function loadPlayerAvatars() {
+      try {
+        return JSON.parse(localStorage.getItem(playerAvatarKey) || '{}');
+      } catch (error) {
+        localStorage.removeItem(playerAvatarKey);
+        return {};
+      }
+    }
+
+    function savePlayerAvatars(avatars) {
+      try {
+        localStorage.setItem(playerAvatarKey, JSON.stringify(avatars));
+      } catch (error) {
+      }
+    }
+
+    function rememberPlayerAvatar(name, avatar) {
+      const key = normalizePlayerName(name);
+      if (!key || !avatar) return;
+      const avatars = loadPlayerAvatars();
+      avatars[key] = avatar;
+      savePlayerAvatars(avatars);
+    }
+
+    function avatarForPlayerName(name) {
+      const key = normalizePlayerName(name);
+      return key ? loadPlayerAvatars()[key] || '' : '';
+    }
+
+    function rememberRoomPlayerAvatars() {
+      if (!room) return;
+      room.players.forEach((player) => rememberPlayerAvatar(player.name, player.avatar));
+    }
+
     function saveFavourite() {
       localStorage.setItem(tableFavouriteKey, JSON.stringify(selectedTable));
     }
@@ -1559,6 +1598,7 @@
       const data = JSON.parse(saved);
       room = data.room;
       rounds = data.rounds || [];
+      rememberRoomPlayerAvatars();
       inviteOpen = false;
       showScreen('room');
     }
@@ -2029,6 +2069,8 @@
       if (!file || !pendingAvatarPlayerId) return;
       const reader = new FileReader();
       reader.onload = () => {
+        const player = room.players.find((item) => item.id === pendingAvatarPlayerId);
+        if (player) rememberPlayerAvatar(player.name, reader.result);
         room.players = room.players.map((player) => player.id === pendingAvatarPlayerId ? { ...player, avatar: reader.result } : player);
         pendingAvatarPlayerId = null;
         saveLocal();
@@ -2059,13 +2101,19 @@
     }
 
     function sitAtSeat(id, name) {
-      room.players = room.players.map((item) => item.id === id ? { ...item, name: name.trim() } : item);
+      const cleanName = name.trim();
+      const currentPlayer = room.players.find((item) => item.id === id);
+      const avatar = avatarForPlayerName(cleanName) || currentPlayer?.avatar || '';
+      if (avatar) rememberPlayerAvatar(cleanName, avatar);
+      room.players = room.players.map((item) => item.id === id ? { ...item, name: cleanName, avatar } : item);
       saveLocal();
       renderRoom();
     }
 
     function leaveSeat(id) {
-      room.players = room.players.map((player) => player.id === id ? { ...player, name: '' } : player);
+      const player = room.players.find((item) => item.id === id);
+      if (player) rememberPlayerAvatar(player.name, player.avatar);
+      room.players = room.players.map((player) => player.id === id ? { ...player, name: '', avatar: '' } : player);
       saveLocal();
       renderRoom();
     }
