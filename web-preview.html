@@ -992,8 +992,7 @@
           <p class="sub">遊客試用版。開房、揀枱規、記牌、流局、調位、埋數。</p>
         </div>
         <div class="panel guest-card">
-          <h2>今日點叫你？</h2>
-          <label>你個名<input id="userName" value="我" /></label>
+          <h2>開枱先</h2>
           <div class="home-actions">
             <button class="btn" onclick="openPresets()">開新房</button>
             <button class="btn secondary" onclick="showScreen('join')">輸入房號入房 / Scan QR Code</button>
@@ -1215,6 +1214,7 @@
       <div class="qr-scanner" id="qrReader"></div>
       <p class="qr-scan-status" id="qrScanStatus">準備開相機，請容許 Safari 使用 Camera。</p>
       <div class="btns">
+        <button class="btn" onclick="openQrImagePicker()">揀 QR 圖 / Screenshot</button>
         <button class="btn secondary" onclick="stopQrScanner()">關閉</button>
       </div>
     </div>
@@ -1263,6 +1263,7 @@
 
   <input class="avatar-input" id="avatarInput" type="file" accept="image/*" onchange="handleAvatarSelected(event)" />
   <input class="avatar-input" id="tilePhotoInput" type="file" accept="image/*" capture="environment" onchange="handleTilePhotoSelected(event)" />
+  <input class="avatar-input" id="qrImageInput" type="file" accept="image/*" onchange="handleQrImageSelected(event)" />
 
   <script>
     const presets = [
@@ -1636,14 +1637,13 @@
 
     function createRoom(presetId) {
       const preset = presetId ? presets.find((item) => item.id === presetId) : getSelectedSetting();
-      const userName = document.getElementById('userName').value.trim() || '我';
       const roomName = document.getElementById('roomName').value.trim() || '今晚麻雀局';
       saveFavourite();
       room = {
         id: Math.random().toString(36).slice(2, 8).toUpperCase(),
         name: roomName,
         setting: preset,
-        ownerName: userName,
+        ownerName: '',
         initialRoundWind: '東',
         initialDealerSeat: '東',
         players: seats.map((seat, index) => ({ id: `player-${index + 1}`, seat, name: '', avatar: '' })),
@@ -1791,7 +1791,11 @@
         script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
         script.async = true;
         script.onload = resolve;
-        script.onerror = () => reject(new Error('QR scanner library 載入失敗'));
+        script.onerror = () => {
+          qrScannerLoader = null;
+          script.remove();
+          reject(new Error('QR scanner library 載入失敗'));
+        };
         document.head.appendChild(script);
       });
       return qrScannerLoader;
@@ -1803,15 +1807,17 @@
       const status = document.getElementById('qrScanStatus');
       reader.innerHTML = '';
       status.textContent = '準備開相機，請容許 Safari 使用 Camera。';
-      modal.showModal();
+      if (!modal.open) modal.showModal();
 
       if (!window.isSecureContext) {
-        status.textContent = '相機掃描需要 HTTPS。請用 GitHub Pages 條 https link 開 app。';
+        status.textContent = '相機掃描需要 HTTPS。請用 GitHub Pages 條 https link 開 app，或者用「揀 QR 圖 / Screenshot」。';
+        showMessage('相機掃描需要 HTTPS。請用 GitHub Pages 條 https link 開 app，或者先用「揀 QR 圖 / Screenshot」掃相。', 'Scan QR Code');
         return;
       }
 
       if (!navigator.mediaDevices?.getUserMedia) {
-        status.textContent = '呢個瀏覽器未支援相機掃描。可以先手動輸入房號。';
+        status.textContent = '呢個瀏覽器未支援相機掃描。可以用「揀 QR 圖 / Screenshot」，或者手動輸入房號。';
+        showMessage('呢個瀏覽器未支援相機掃描。可以用「揀 QR 圖 / Screenshot」，或者手動輸入房號。', 'Scan QR Code');
         return;
       }
 
@@ -1829,7 +1835,41 @@
         status.textContent = '請將房主 QR Code 放入框內。';
       } catch (error) {
         qrScannerActive = false;
-        status.textContent = `開相機失敗：${error.message || error}。可以先手動輸入房號。`;
+        status.textContent = `開相機失敗：${error.message || error}。可以用「揀 QR 圖 / Screenshot」，或者手動輸入房號。`;
+        showMessage(status.textContent, 'Scan QR Code');
+      }
+    }
+
+    function openQrImagePicker() {
+      const input = document.getElementById('qrImageInput');
+      input.value = '';
+      input.click();
+    }
+
+    async function handleQrImageSelected(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const modal = document.getElementById('qrScannerModal');
+      const reader = document.getElementById('qrReader');
+      const status = document.getElementById('qrScanStatus');
+      if (!modal.open) modal.showModal();
+      status.textContent = '讀緊 QR 圖片...';
+      try {
+        if (qrScanner && qrScannerActive) await qrScanner.stop();
+        if (qrScanner) qrScanner.clear();
+        qrScanner = null;
+        qrScannerActive = false;
+        reader.innerHTML = '';
+        await loadQrScannerLibrary();
+        const imageScanner = new Html5Qrcode('qrReader');
+        const decodedText = await imageScanner.scanFile(file, true);
+        imageScanner.clear();
+        await handleQrScanResult(decodedText);
+      } catch (error) {
+        status.textContent = `讀唔到呢張 QR 圖：${error.message || error}。請試清楚啲嘅 QR screenshot，或者手動輸入房號。`;
+        showMessage(status.textContent, 'Scan QR Code');
+      } finally {
+        event.target.value = '';
       }
     }
 
@@ -1999,7 +2039,7 @@
 
     function openSitDialog(id, isEdit = false) {
       const player = room.players.find((item) => item.id === id);
-      const defaultName = document.getElementById('userName').value.trim() || room.ownerName || '我';
+      const defaultName = room.ownerName || '我';
       pendingSeatId = id;
       document.getElementById('sitSeatTitle').textContent = isEdit ? `改${player.seat}位名` : `${player.seat}位坐低`;
       document.getElementById('sitName').value = isEdit ? player.name : defaultName;
