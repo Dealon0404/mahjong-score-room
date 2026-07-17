@@ -13,7 +13,9 @@ class YoloOnnxDetector:
 
         self.np = np
         self.session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
-        self.input_name = self.session.get_inputs()[0].name
+        self.input = self.session.get_inputs()[0]
+        self.input_name = self.input.name
+        self.input_dtype = np.float16 if "float16" in self.input.type else np.float32
         self.classes = _read_classes(classes_path)
         self.image_size = image_size
         self.confidence = confidence
@@ -62,7 +64,7 @@ class YoloOnnxDetector:
         pad_x = (self.image_size - resized_width) // 2
         pad_y = (self.image_size - resized_height) // 2
         canvas[pad_y:pad_y + resized_height, pad_x:pad_x + resized_width] = np.asarray(resized)
-        array = canvas.astype(np.float32) / 255.0
+        array = canvas.astype(self.input_dtype) / self.input_dtype(255.0)
         array = np.transpose(array, (2, 0, 1))[None, :, :, :]
         return array, scale, float(pad_x), float(pad_y), original_width, original_height
 
@@ -84,18 +86,36 @@ class YoloOnnxDetector:
 
 
 def create_detector_from_env(env: dict[str, str]) -> YoloOnnxDetector | None:
-    model_path = env.get("MAHJONG_YOLO_MODEL_PATH", "").strip()
-    classes_path = env.get("MAHJONG_YOLO_CLASSES_PATH", "").strip()
+    settings = _load_model_env_file()
+    settings.update({key: value for key, value in env.items() if value})
+    model_path = settings.get("MAHJONG_YOLO_MODEL_PATH", "").strip()
+    classes_path = settings.get("MAHJONG_YOLO_CLASSES_PATH", "").strip()
     if not model_path or not classes_path:
         return None
     if not Path(model_path).is_file():
         raise FileNotFoundError(f"MAHJONG_YOLO_MODEL_PATH not found: {model_path}")
     if not Path(classes_path).is_file():
         raise FileNotFoundError(f"MAHJONG_YOLO_CLASSES_PATH not found: {classes_path}")
-    image_size = int(env.get("MAHJONG_YOLO_IMAGE_SIZE", "640"))
-    confidence = float(env.get("MAHJONG_YOLO_CONFIDENCE", "0.3"))
-    iou = float(env.get("MAHJONG_YOLO_IOU", "0.45"))
+    image_size = int(settings.get("MAHJONG_YOLO_IMAGE_SIZE", "640"))
+    confidence = float(settings.get("MAHJONG_YOLO_CONFIDENCE", "0.3"))
+    iou = float(settings.get("MAHJONG_YOLO_IOU", "0.45"))
     return YoloOnnxDetector(model_path, classes_path, image_size=image_size, confidence=confidence, iou=iou)
+
+
+def _load_model_env_file() -> dict[str, str]:
+    root = Path(__file__).resolve().parents[1]
+    env_path = root / "models" / "model.env"
+    if not env_path.is_file():
+        return {}
+
+    values: dict[str, str] = {}
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip().strip('"\'')
+    return values
 
 
 def _read_classes(path: str) -> list[str]:

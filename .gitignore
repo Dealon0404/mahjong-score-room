@@ -4,6 +4,7 @@
 node_modules/
 .venv/
 vision-service/.venv/
+vision-service/models/
 __pycache__/
 *.py[cod]
 

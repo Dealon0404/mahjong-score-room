@@ -23,6 +23,23 @@ localStorage.setItem('mahjong-tile-vision-endpoint', 'http://127.0.0.1:8001/api/
 
 ## Model Environment Variables
 
+Fastest local bootstrap with a MIT-licensed ONNX model from `zzijin/MahjongTool_TileMind`:
+
+```powershell
+cd mahjong-score-room\vision-service
+.\.venv\Scripts\python.exe scripts\bootstrap_model.py
+```
+
+The script downloads the model into ignored local folder `vision-service/models/`, writes `classes.txt`, and creates `models\set-model-env.ps1`.
+
+Then start or restart the server. The service automatically reads `models\model.env` created by the bootstrap script:
+
+```powershell
+uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
+```
+
+Manual configuration:
+
 ```powershell
 $env:MAHJONG_YOLO_MODEL_PATH = "C:\path\to\best.onnx"
 $env:MAHJONG_YOLO_CLASSES_PATH = "C:\path\to\classes.txt"

@@ -28,6 +28,13 @@ _detector = None
 _detector_error = ""
 
 
+@app.middleware("http")
+async def add_private_network_cors_header(request: Request, call_next: Any) -> Any:
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Private-Network"] = "true"
+    return response
+
+
 @app.get("/health")
 def health() -> dict[str, Any]:
     detector = _get_detector()

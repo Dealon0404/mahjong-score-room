@@ -10,8 +10,11 @@ class TileMappingTests(unittest.TestCase):
         self.assertEqual(normalize_tile_code("characters-1"), "1m")
         self.assertEqual(normalize_tile_code("dots-9"), "9p")
         self.assertEqual(normalize_tile_code("bamboo-5"), "5s")
+        self.assertEqual(normalize_tile_code("一万"), "1m")
+        self.assertEqual(normalize_tile_code("九筒"), "9p")
         self.assertEqual(normalize_tile_code("1z"), "east")
         self.assertEqual(normalize_tile_code("7z"), "red")
+        self.assertEqual(normalize_tile_code("红中"), "red")
 
 
 class HandGroupingTests(unittest.TestCase):

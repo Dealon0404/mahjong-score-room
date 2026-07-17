@@ -35,6 +35,18 @@ Z_TO_HONOR = {
     "7z": "red",
 }
 
+CHINESE_NUMBERS = {
+    "一": 1,
+    "二": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "七": 7,
+    "八": 8,
+    "九": 9,
+}
+
 ALIASES = {
     "east": "east",
     "honors-east": "east",
@@ -105,6 +117,32 @@ for value in range(1, 9):
     ALIASES[f"flower{value}"] = f"flower{value}"
     ALIASES[f"flower-{value}"] = f"flower{value}"
     ALIASES[f"bonus-{value}"] = f"flower{value}"
+
+for chinese, value in CHINESE_NUMBERS.items():
+    ALIASES[f"{chinese}万"] = f"{value}m"
+    ALIASES[f"{chinese}萬"] = f"{value}m"
+    ALIASES[f"{chinese}饼"] = f"{value}p"
+    ALIASES[f"{chinese}餅"] = f"{value}p"
+    ALIASES[f"{chinese}筒"] = f"{value}p"
+    ALIASES[f"{chinese}条"] = f"{value}s"
+    ALIASES[f"{chinese}條"] = f"{value}s"
+    ALIASES[f"{chinese}索"] = f"{value}s"
+
+ALIASES.update({
+    "东风": "east",
+    "東風": "east",
+    "南风": "south",
+    "南風": "south",
+    "西风": "west",
+    "西風": "west",
+    "北风": "north",
+    "北風": "north",
+    "红中": "red",
+    "紅中": "red",
+    "发财": "green",
+    "發財": "green",
+    "白板": "white",
+})
 
 
 def normalize_tile_code(raw_label: str) -> str:
