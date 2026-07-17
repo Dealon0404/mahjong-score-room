@@ -1,0 +1,1 @@
+"""Mahjong Vision Service package."""

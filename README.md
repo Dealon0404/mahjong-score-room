@@ -49,6 +49,26 @@ localStorage.setItem('mahjong-tile-vision-endpoint', 'https://your-api.vercel.ap
 
 已整理 GitHub 上麻雀牌 object detection / YOLO / CV 相關候選 repo、license 風險同建議接法，見 [MAHJONG_CV_RESEARCH.md](MAHJONG_CV_RESEARCH.md)。
 
+### YOLO Vision Service Prototype
+
+已加第一版 Python/FastAPI prototype：見 [vision-service/README.md](vision-service/README.md)。呢個 service 同樣提供 `/api/analyze-tiles`，可以接自己訓練/export 出嚟嘅 YOLO ONNX model；未設定 model 時仍會回傳合法 JSON 同 warning，方便先測前端串接。
+
+本機試跑：
+
+```powershell
+cd mahjong-score-room\vision-service
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
+```
+
+前端改用本機 vision service：
+
+```js
+localStorage.setItem('mahjong-tile-vision-endpoint', 'http://127.0.0.1:8001/api/analyze-tiles')
+```
+
 ## 本機開發
 
 如果你已經安裝 Node.js：
