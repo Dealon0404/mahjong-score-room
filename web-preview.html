@@ -1359,6 +1359,7 @@
     const tableFavouriteKey = 'mahjong-table-favourite';
     const namedTableFavouritesKey = 'mahjong-table-favourite-list';
     const playerAvatarKey = 'mahjong-player-avatars';
+    const productionInviteBase = 'https://dealon0404.github.io/mahjong-score-room/';
 
     const seats = ['東', '南', '西', '北'];
     const seatPosition = { 東: 'east', 南: 'south', 西: 'west', 北: 'north' };
@@ -1758,7 +1759,7 @@
     }
 
     function buildRoomInviteUrl() {
-      const base = `${location.origin}${location.pathname}`;
+      const base = location.hostname.endsWith('github.io') ? `${location.origin}${location.pathname}` : productionInviteBase;
       return `${base}#join=${encodeInvitePayload(buildRoomInvite())}`;
     }
 
