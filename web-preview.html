@@ -885,24 +885,29 @@
       }
 
       .seat-table {
-        grid-template-columns: minmax(88px, 0.9fr) minmax(132px, 1.35fr) minmax(88px, 0.9fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         grid-template-rows: auto auto auto;
-        gap: 10px;
+        gap: 8px;
         align-items: stretch;
       }
 
       .table-center {
         grid-column: 2;
         grid-row: 2;
-        min-height: 132px;
-        border-radius: 20px;
-        font-size: 15px;
+        align-self: center;
+        min-height: 112px;
+        padding: 8px 4px;
+        border-radius: 18px;
+        font-size: 14px;
+        box-shadow: inset 0 0 0 6px rgba(248, 214, 117, 0.18);
       }
 
       .table-seat {
-        min-height: 108px;
-        padding: 10px;
-        border-radius: 14px;
+        align-content: start;
+        min-height: 172px;
+        gap: 7px;
+        padding: 8px 6px;
+        border-radius: 13px;
       }
 
       .table-seat.north {
@@ -927,33 +932,60 @@
 
       .seat-head {
         align-items: start;
+        gap: 6px;
       }
 
-      .table-seat.east .seat-head,
-      .table-seat.west .seat-head {
-        display: grid;
-        justify-items: center;
+      .seat-labels {
+        gap: 4px;
       }
 
-      .table-seat.east .avatar-button,
-      .table-seat.west .avatar-button,
-      .table-seat.east .seat-actions,
-      .table-seat.west .seat-actions,
-      .table-seat.east .seat-total,
-      .table-seat.west .seat-total {
-        display: none;
+      .dealer-badge {
+        padding: 4px 7px;
+        font-size: 12px;
       }
 
-      .table-seat.east .player-name,
-      .table-seat.west .player-name {
-        font-size: 15px;
+      .avatar-button {
+        width: 52px;
+        height: 52px;
+        font-size: 11px;
+      }
+
+      .player-name {
+        font-size: 16px;
+        line-height: 1.2;
         white-space: normal;
       }
 
-      .table-seat.east .seat-plus,
-      .table-seat.west .seat-plus {
-        min-height: 64px;
+      .seat-total {
+        padding: 0;
+        font-size: 22px;
+      }
+
+      .seat-actions {
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .seat-actions .muted {
+        display: none;
+      }
+
+      .name-edit {
+        min-width: 34px;
+        padding: 0 8px;
+        font-size: 14px;
+      }
+
+      .seat-plus {
+        min-height: 108px;
         padding: 4px;
+        font-size: 14px;
+      }
+
+      .seat-plus span {
+        width: 24px;
+        height: 24px;
+        margin-right: 4px;
       }
 
       .room-actions {
@@ -1355,6 +1387,7 @@
     let tilePhotoObjectUrl = '';
     let qrScanner = null;
     let qrScannerActive = false;
+    let qrScanHandled = false;
     let qrScannerLoader = null;
     let draft = { winType: '自摸', winnerId: 'player-1', payerId: 'player-2', faan: 3 };
     let selectedTable = {
@@ -1846,6 +1879,7 @@
       const reader = document.getElementById('qrReader');
       const status = document.getElementById('qrScanStatus');
       reader.innerHTML = '';
+      qrScanHandled = false;
       status.textContent = '準備開相機，請容許 Safari 使用 Camera。';
       if (!modal.open) modal.showModal();
 
@@ -1893,6 +1927,7 @@
       const reader = document.getElementById('qrReader');
       const status = document.getElementById('qrScanStatus');
       if (!modal.open) modal.showModal();
+      qrScanHandled = false;
       status.textContent = '讀緊 QR 圖片...';
       try {
         if (qrScanner && qrScannerActive) await qrScanner.stop();
@@ -1915,18 +1950,21 @@
 
     async function stopQrScanner() {
       const modal = document.getElementById('qrScannerModal');
-      try {
-        if (qrScanner && qrScannerActive) await qrScanner.stop();
-        if (qrScanner) qrScanner.clear();
-      } catch (error) {
-      }
+      const activeScanner = qrScanner;
+      const wasActive = qrScannerActive;
       qrScanner = null;
       qrScannerActive = false;
-      document.getElementById('qrReader').innerHTML = '';
       if (modal.open) modal.close();
+      try {
+        if (activeScanner && wasActive) await activeScanner.stop();
+        if (activeScanner) activeScanner.clear();
+      } catch (error) {
+      }
+      document.getElementById('qrReader').innerHTML = '';
     }
 
     async function handleQrScanResult(decodedText) {
+      if (qrScanHandled) return;
       const parsed = parseRoomInvite(decodedText);
       const status = document.getElementById('qrScanStatus');
       if (!parsed) {
@@ -1934,7 +1972,9 @@
         return;
       }
 
-      await stopQrScanner();
+      qrScanHandled = true;
+      status.textContent = '掃到房間 QR Code，正在入房...';
+      stopQrScanner().catch(() => {});
       if (parsed.invite) {
         joinRoomFromInvite(parsed.invite, 'QR Code');
         return;
