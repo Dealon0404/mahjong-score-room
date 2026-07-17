@@ -19,6 +19,7 @@ GitHub Pages 部署已設定好喺 `.github/workflows/pages.yml`。推上 GitHub
 - `自摸`、`食糊`、`包自摸`
 - 房主 QR Code
 - 相機掃 QR Code
+- Live room 同步：掃 QR 後加入同一個 production room，不再係本機副本
 - 人人可改玩家名
 - 人人可修改或刪除牌局紀錄
 - 自動計每人輸贏同最少交易結算
@@ -87,12 +88,34 @@ cd mahjong-score-room
 
 之後用 iPhone 安裝 `Expo Go`，掃 terminal 入面 Expo 顯示嘅 QR Code 就可以試。
 
-## 下一步要接後端
+## Production Live Room Sync
 
-而家係可運行本機 MVP。要做到真正多人跨機同步同永久保留，需要接 Firebase：
+而家 PWA 已接 `/api/live-room`，掃新版 QR Code 會加入同一個 live room。任何人坐低、離座、調位、記牌、刪紀錄都會同步到同房其他裝置。
+
+Production 建議用 Vercel + Upstash Redis：
+
+1. 將 repo 部署到 Vercel，保留 `api/live-room.js` serverless function。
+2. 建立 Upstash Redis database。
+3. 喺 Vercel Project Settings > Environment Variables 加：
+	- `UPSTASH_REDIS_REST_URL`
+	- `UPSTASH_REDIS_REST_TOKEN`
+	- `ALLOWED_ORIGIN=https://dealon0404.github.io`，或自訂前端 domain
+	- `LIVE_ROOM_TTL_SECONDS=86400`，可按需要調整房間保留時間
+4. Redeploy Vercel。
+5. GitHub Pages 前端預設會 call `https://mahjong-score-room.vercel.app/api/live-room`。
+
+如果 Vercel domain 唔同，喺 browser console 設定一次：
+
+```js
+localStorage.setItem('mahjong-live-api-base', 'https://your-vercel-app.vercel.app')
+```
+
+未設定 Upstash 時，API 會用 `memory-dev` fallback，只適合本機/短暫測試，唔係 production 持久同步。
+
+## 下一步要接後端 Auth
+
+而家 live room 可以 production 同步。若要正式做帳戶、權限同永久保留，可再接 Firebase / Supabase：
 
 - Firebase Auth：Apple ID、Google、Email、遊客
 - Firestore：rooms、players、rounds、auditLogs
 - Firestore security rules：房內玩家先可以讀寫該房
-
-接 Firebase 之後，其他玩家掃房主 QR Code 先可以喺自己部機即時加入同同步。
