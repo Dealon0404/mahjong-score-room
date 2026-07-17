@@ -1534,9 +1534,18 @@
 
     function getLiveApiBase() {
       const configured = cleanApiBase(localStorage.getItem(liveApiBaseKey));
-      if (configured) return configured;
+      if (configured && !isStaticFrontendBase(configured)) return configured;
+      if (configured) localStorage.removeItem(liveApiBaseKey);
       if (location.hostname.endsWith('vercel.app')) return location.origin;
       return defaultLiveApiBase;
+    }
+
+    function isStaticFrontendBase(value) {
+      try {
+        return new URL(value).hostname.endsWith('github.io');
+      } catch (error) {
+        return false;
+      }
     }
 
     function activeLiveApiBase() {
@@ -1595,7 +1604,7 @@
         liveRoomId = snapshot.roomId || room.id;
         setLiveSyncStatus(snapshot.storage === 'memory-dev' ? 'Live：已同步（dev memory）' : 'Live：已同步');
       } catch (error) {
-        setLiveSyncStatus(`Live：連線失敗 ${error.message || error}`);
+        setLiveSyncStatus(`Live：${liveErrorMessage(error)}`);
       } finally {
         livePushInFlight = false;
         if (livePushQueued) {
@@ -1617,16 +1626,17 @@
           applyLiveSnapshot(snapshot);
         }
       } catch (error) {
-        setLiveSyncStatus(`Live：連線失敗 ${error.message || error}`);
+        setLiveSyncStatus(`Live：${liveErrorMessage(error)}`);
       }
     }
 
     async function fetchLiveSnapshot(roomId, apiBase = activeLiveApiBase(), since = 0) {
       const url = `${cleanApiBase(apiBase)}/api/live-room?room=${encodeURIComponent(roomId)}&since=${encodeURIComponent(since || 0)}`;
       const response = await fetch(url, { headers: { Accept: 'application/json' } });
+      const payload = await readLiveApiJson(response, apiBase);
       if (response.status === 404) return null;
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return response.json();
+      if (!response.ok) throw new Error(payload.message || payload.error || `HTTP ${response.status}`);
+      return payload;
     }
 
     async function postLiveSnapshot(roomId, state, apiBase = activeLiveApiBase(), baseRevision = 0, reason = 'save') {
@@ -1635,9 +1645,29 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roomId, state, clientId: liveClientId, baseRevision, reason }),
       });
-      const payload = await response.json().catch(() => ({}));
+      const payload = await readLiveApiJson(response, apiBase);
       if (!response.ok) throw new Error(payload.message || payload.error || `HTTP ${response.status}`);
       return payload;
+    }
+
+    async function readLiveApiJson(response, apiBase) {
+      const contentType = response.headers.get('content-type') || '';
+      const text = await response.text();
+      if (!contentType.includes('application/json')) throw new Error(liveBackendUnavailableMessage(apiBase, response.status));
+      try {
+        return text ? JSON.parse(text) : {};
+      } catch (error) {
+        throw new Error(liveBackendUnavailableMessage(apiBase, response.status));
+      }
+    }
+
+    function liveBackendUnavailableMessage(apiBase, status) {
+      const statusText = status ? `HTTP ${status}` : '無回應';
+      return `backend 未部署或 API URL 錯誤（${cleanApiBase(apiBase)}/api/live-room，${statusText}）`;
+    }
+
+    function liveErrorMessage(error) {
+      return error?.message || String(error || '連線失敗');
     }
 
     function applyLiveSnapshot(snapshot) {
@@ -1694,7 +1724,7 @@
         showMessage(`已用 ${source} live 加入「${room.name}」。`, '入房成功');
         return true;
       } catch (error) {
-        showMessage(`入唔到 live 房：${error.message || error}`, '入房');
+        showMessage(`入唔到 live 房：${liveErrorMessage(error)}`, '入房');
         return false;
       }
     }
@@ -1715,7 +1745,7 @@
         showMessage(`已用 ${source} live 加入「${room.name}」。`, '入房成功');
         return true;
       } catch (error) {
-        showMessage(`掃到邀請，但入唔到 live 房：${error.message || error}`, '入房失敗');
+        showMessage(`掃到邀請，但入唔到 live 房：${liveErrorMessage(error)}`, '入房失敗');
         return false;
       }
     }
