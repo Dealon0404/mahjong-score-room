@@ -14,6 +14,32 @@
 
 用網上相片時，只用 license 清晰嘅 dataset / repo。唔好隨機 scrape 受版權保護嘅圖片放入 repo 或 production dataset。
 
+## Bootstrap With Open Licensed Online Images
+
+可以先用 MIT dataset 做合法 baseline seed，唔需要等用戶相片先開始：
+
+```powershell
+cd mahjong-score-room\vision-service
+.\.venv\Scripts\Activate.ps1
+python scripts\bootstrap_open_seed_dataset.py --samples 600
+```
+
+呢個 script 會：
+
+1. 下載 MIT `Camerash/mahjong-dataset` 嘅 `train.zip`。
+2. 讀取單隻牌 labels。
+3. 隨機合成一排 13-16 隻牌，模擬食糊手牌相。
+4. 自動產生 YOLO bounding-box labels。
+5. 建立 `datasets/mahjong-open-seed/data.yaml`。
+
+之後先 train baseline：
+
+```powershell
+python scripts\train_yolo.py --data datasets/mahjong-open-seed/data.yaml --model yolov8n.pt --epochs 40 --imgsz 960
+```
+
+呢個 baseline 會學到牌面類別同一排手牌 layout，但因為係 synthetic，相片反光、真實枱面、牌厚度、斜角仍然要靠 app opt-in 真相 fine-tune。
+
 ## Collect Training Photos From The App
 
 PWA 已加 opt-in collection：用戶影相計番後，如果勾選「匿名提供呢張牌相同分析結果」，並且按 Accept，app 會 POST 到：

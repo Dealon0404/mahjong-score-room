@@ -106,10 +106,11 @@
 ## 下一步 MVP
 
 1. 先用 OpenAI Vision 繼續撐 demo。
-2. 建一個 `mahjong-vision-service` Python/FastAPI prototype，用 `ultralytics` 或 `onnxruntime`。
-3. 用 `MJOD-2136` + 自己影 100-300 張香港麻雀食糊手牌相 fine-tune YOLO11n。
-4. Export ONNX，部署去 Cloud Run / Render / Fly.io。GitHub Pages 本身跑唔到 Python/YOLO backend。
-5. 前端用：
+2. 用 `scripts/bootstrap_open_seed_dataset.py` 下載 MIT `Camerash/mahjong-dataset`，合成 YOLO seed dataset。
+3. 建一個 `mahjong-vision-service` Python/FastAPI prototype，用 `ultralytics` 或 `onnxruntime`。
+4. 用 app opt-in samples、`MJOD-2136`、自己影 100-300 張香港麻雀食糊手牌相 fine-tune YOLO11n。
+5. Export ONNX，部署去 Cloud Run / Render / Fly.io。GitHub Pages 本身跑唔到 Python/YOLO backend。
+6. 前端用：
 
 ```js
 localStorage.setItem('mahjong-tile-vision-endpoint', 'https://your-vision-service.example.com/api/analyze-tiles')

@@ -6,6 +6,7 @@ node_modules/
 vision-service/.venv/
 vision-service/models/
 vision-service/datasets/
+vision-service/downloads/
 vision-service/runs/
 __pycache__/
 *.py[cod]
