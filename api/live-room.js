@@ -44,6 +44,17 @@ async function liveRoom(req, res) {
 }
 
 async function handleGet(req, res) {
+  if (req.query?.health) {
+    sendJson(res, 200, {
+      ok: true,
+      source: 'live-room',
+      storage: storageMode(),
+      persistent: hasUpstash(),
+      ttlSeconds: ROOM_TTL_SECONDS,
+    });
+    return;
+  }
+
   const roomId = normalizeRoomId(req.query?.room || req.query?.id);
   if (!roomId) {
     sendJson(res, 400, { error: 'ROOM_REQUIRED', message: 'Missing room id.' });

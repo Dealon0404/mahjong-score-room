@@ -101,13 +101,26 @@ Production 建議用 Vercel + Upstash Redis：
 
 1. 將 repo 部署到 Vercel，保留 `api/live-room.js` serverless function。
 2. 建立 Upstash Redis database。
-3. 喺 Vercel Project Settings > Environment Variables 加：
+3. 喺 GitHub repo `Settings` > `Secrets and variables` > `Actions` 加 required secrets：
+	- `VERCEL_TOKEN`
+	- `VERCEL_ORG_ID`
+	- `VERCEL_PROJECT_ID`
+	- `UPSTASH_REDIS_REST_URL`
+	- `UPSTASH_REDIS_REST_TOKEN`
+4. Optional secrets：
+	- `ALLOWED_ORIGIN=https://dealon0404.github.io`
+	- `LIVE_ROOM_TTL_SECONDS=86400`
+5. Run GitHub Actions workflow `Deploy Live Backend to Vercel`。
+6. Workflow 會打 `/api/live-room?health=1`，確認 `storage` 係 `upstash-redis` 同 `persistent: true`。
+
+如果手動喺 Vercel Project Settings > Environment Variables 加，至少要有：
+
 	- `UPSTASH_REDIS_REST_URL`
 	- `UPSTASH_REDIS_REST_TOKEN`
 	- `ALLOWED_ORIGIN=https://dealon0404.github.io`，或自訂前端 domain
 	- `LIVE_ROOM_TTL_SECONDS=86400`，可按需要調整房間保留時間
-4. Redeploy Vercel。
-5. GitHub Pages 前端預設會 call `https://mahjong-score-room.vercel.app/api/live-room`。
+
+GitHub Pages 前端預設會 call `https://mahjong-score-room.vercel.app/api/live-room`。
 
 如果 Vercel domain 唔同，喺 browser console 設定一次：
 
