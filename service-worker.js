@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jaak-soeng-v17';
+const CACHE_NAME = 'jaak-soeng-v18';
 const ASSETS = [
   './',
   './index.html',
