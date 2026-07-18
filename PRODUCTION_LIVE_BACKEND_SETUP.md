@@ -165,6 +165,40 @@ https://mahjong-score-room.vercel.app/api/analyze-tiles?health=1
 
 如果 `openaiConfigured` 係 `false`，影相計番只會跌返 fallback，唔會真認牌。
 
+## 9. Enable Opt-in Training Photo Collection
+
+如果想用 app 用戶自願提供嘅相片幫手 fine-tune YOLO，需要 Vercel Blob。
+
+1. 去 Vercel project > Storage。
+2. Create Blob store。
+3. 將 Blob read/write token 加到 Environment Variables：
+
+```text
+BLOB_READ_WRITE_TOKEN=你的 Vercel Blob token
+```
+
+4. Redeploy。
+5. 打開：
+
+```text
+https://mahjong-score-room.vercel.app/api/training-samples?health=1
+```
+
+成功應該見到：
+
+```json
+{
+  "ok": true,
+  "source": "training-samples",
+  "storage": "vercel-blob",
+  "configured": true
+}
+```
+
+App 只會喺用戶勾選同意，並且按 Accept 使用分析結果後，先上載該張相。提示用戶避免影到人樣、電話號碼、收據、地址等個人資料。
+
+Fine-tune YOLO 步驟見 [vision-service/TRAINING.md](vision-service/TRAINING.md)。
+
 ## Troubleshooting
 
 ### Workflow says missing secret

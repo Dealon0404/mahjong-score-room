@@ -19,6 +19,9 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
       UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_VISION_MODEL: ${{ secrets.OPENAI_VISION_MODEL || 'gpt-4o' }}
+      BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
       ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN || 'https://dealon0404.github.io' }}
       LIVE_ROOM_TTL_SECONDS: ${{ secrets.LIVE_ROOM_TTL_SECONDS || '86400' }}
     steps:
@@ -54,11 +57,20 @@ jobs:
         id: deploy
         shell: bash
         run: |
-          url=$(vercel deploy --prod --yes --token "$VERCEL_TOKEN" \
+          env_args=(
             --env UPSTASH_REDIS_REST_URL="$UPSTASH_REDIS_REST_URL" \
             --env UPSTASH_REDIS_REST_TOKEN="$UPSTASH_REDIS_REST_TOKEN" \
             --env ALLOWED_ORIGIN="$ALLOWED_ORIGIN" \
-            --env LIVE_ROOM_TTL_SECONDS="$LIVE_ROOM_TTL_SECONDS" | tail -n 1)
+            --env LIVE_ROOM_TTL_SECONDS="$LIVE_ROOM_TTL_SECONDS"
+          )
+          if [ -n "$OPENAI_API_KEY" ]; then
+            env_args+=(--env OPENAI_API_KEY="$OPENAI_API_KEY")
+            env_args+=(--env OPENAI_VISION_MODEL="$OPENAI_VISION_MODEL")
+          fi
+          if [ -n "$BLOB_READ_WRITE_TOKEN" ]; then
+            env_args+=(--env BLOB_READ_WRITE_TOKEN="$BLOB_READ_WRITE_TOKEN")
+          fi
+          url=$(vercel deploy --prod --yes --token "$VERCEL_TOKEN" "${env_args[@]}" | tail -n 1)
           echo "deployment_url=$url" >> "$GITHUB_OUTPUT"
           echo "Deployed to $url"
 

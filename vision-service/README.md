@@ -84,3 +84,7 @@ Response shape matches `api/analyze-tiles.js`:
 - ONNX detection is optional and lazy-loaded.
 - Detected tiles are grouped into the likely winning hand row using a deterministic line-fit filter inspired by the RANSAC approach found during research.
 - Hong Kong Mahjong fan counting is intentionally heuristic. It handles common photo-visible patterns first: `自摸`, `平糊`, `對對糊`, `混一色`, `清一色`, `小三元`, `大三元`, `字一色`, `七對子`, `十三么`, and visible seat/round wind triplets.
+
+## Fine-tuning With Real Photos
+
+For the custom training workflow, opt-in app collection, dataset structure, labelling, YOLO training, and ONNX export, see [TRAINING.md](TRAINING.md).

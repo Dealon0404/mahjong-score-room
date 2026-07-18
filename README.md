@@ -57,6 +57,8 @@ localStorage.setItem('mahjong-tile-vision-endpoint', 'https://your-api.vercel.ap
 
 已加第一版 Python/FastAPI prototype：見 [vision-service/README.md](vision-service/README.md)。呢個 service 同樣提供 `/api/analyze-tiles`，可以接自己訓練/export 出嚟嘅 YOLO ONNX model；未設定 model 時仍會回傳合法 JSON 同 warning，方便先測前端串接。
 
+自訂訓練 workflow、App opt-in 收集訓練相、dataset 結構、label 同 YOLO fine-tune 步驟，見 [vision-service/TRAINING.md](vision-service/TRAINING.md)。網上牌相只應使用 license 清晰嘅 dataset；番數仍然要靠完整手牌同 app context 計算，唔係單靠一張牌圖就知。
+
 本機試跑：
 
 ```powershell
@@ -72,6 +74,14 @@ uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
 ```js
 localStorage.setItem('mahjong-tile-vision-endpoint', 'http://127.0.0.1:8001/api/analyze-tiles')
 ```
+
+開通用戶 opt-in 訓練相 collection，需要 Vercel Blob：
+
+```text
+BLOB_READ_WRITE_TOKEN
+```
+
+Redeploy 後檢查：`https://mahjong-score-room.vercel.app/api/training-samples?health=1`，要見到 `configured: true`。
 
 ## 本機開發
 

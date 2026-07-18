@@ -1230,6 +1230,7 @@
       <p class="muted" id="tileAnalyzerStatus">影低食糊牌之後，系統會分析番數同原因。</p>
       <img class="tile-photo-preview" id="tilePhotoPreview" alt="食糊牌相" hidden />
       <div class="analysis-summary" id="tileAnalysisResult"></div>
+      <label><input id="tileTrainingConsent" type="checkbox" /> 匿名提供呢張牌相同分析結果，幫手改善認牌模型。請避免影到人樣或個人資料。</label>
       <div>
         <p class="muted">如果相片分析未夠準，可以先補選見到嘅常見牌型，Accept 後仍然可以手動改番數。</p>
         <div class="chips" id="tilePatternChips"></div>
@@ -1366,6 +1367,8 @@
     const defaultLiveApiBase = 'https://mahjong-score-room.vercel.app';
     const tileVisionMaxImageSide = 1600;
     const tileVisionJpegQuality = 0.86;
+    const tileTrainingEndpointKey = 'mahjong-tile-training-endpoint';
+    const appBuildVersion = '2026-07-18-training-v1';
     const livePollMs = 1800;
     const peerJsUrl = 'https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js';
 
@@ -1394,6 +1397,8 @@
     let tileAnalysis = null;
     let selectedTilePatternIds = new Set();
     let tilePhotoObjectUrl = '';
+    let tileTrainingImageDataUrl = '';
+    let tileTrainingContext = null;
     let qrScanner = null;
     let qrScannerActive = false;
     let qrScanHandled = false;
@@ -2747,24 +2752,35 @@
       tilePhotoObjectUrl = URL.createObjectURL(file);
       selectedTilePatternIds = new Set();
       tileAnalysis = null;
+      tileTrainingImageDataUrl = '';
+      tileTrainingContext = null;
 
       const preview = document.getElementById('tilePhotoPreview');
       preview.src = tilePhotoObjectUrl;
       preview.hidden = false;
+      document.getElementById('tileTrainingConsent').checked = false;
       document.getElementById('tileAnalyzerStatus').textContent = '分析緊張相...';
       document.getElementById('tileAnalysisResult').innerHTML = '<p class="muted">正在讀取相片同準備計番。</p>';
       renderTilePatternChips();
       document.getElementById('tileAnalyzerModal').showModal();
 
-      tileAnalysis = await analyzeTilePhoto(file);
+      tileTrainingImageDataUrl = await prepareTileVisionImage(file);
+      tileAnalysis = await analyzeTilePhoto(file, tileTrainingImageDataUrl);
       renderTileAnalysisResult();
     }
 
-    async function analyzeTilePhoto(file) {
+    async function analyzeTilePhoto(file, image) {
       const endpoints = tileVisionEndpoints();
-      const image = await prepareTileVisionImage(file);
       const windState = currentWindState();
       const winner = room.players.find((player) => player.id === draft.winnerId);
+      tileTrainingContext = {
+        tableSetting: room.setting,
+        winType: draft.winType,
+        currentFaan: draft.faan,
+        roundWind: windState.roundWind,
+        dealerSeat: windState.dealerSeat,
+        winnerSeat: winner?.seat || '',
+      };
       const errors = [];
 
       for (const endpoint of endpoints) {
@@ -2776,15 +2792,7 @@
               image,
               imageName: file.name,
               imageType: file.type,
-              context: {
-                tableSetting: room.setting,
-                winType: draft.winType,
-                currentFaan: draft.faan,
-                roundWind: windState.roundWind,
-                dealerSeat: windState.dealerSeat,
-                winnerSeat: winner?.seat || '',
-                winnerName: winner ? displayPlayerName(winner) : '',
-              },
+              context: tileTrainingContext,
             }),
           });
           const payload = await response.json().catch(() => ({}));
@@ -2806,6 +2814,11 @@
       if (!location.hostname.endsWith('github.io')) endpoints.push(`${location.origin}/api/analyze-tiles`);
       if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') endpoints.push('http://127.0.0.1:8001/api/analyze-tiles');
       return [...new Set(endpoints)];
+    }
+
+    function tileTrainingEndpoint() {
+      const configured = localStorage.getItem(tileTrainingEndpointKey)?.trim();
+      return configured || `${getLiveApiBase()}/api/training-samples`;
     }
 
     function tileVisionEndpointError(response, payload) {
@@ -2943,8 +2956,32 @@
       const note = document.getElementById('roundNote');
       note.value = note.value.trim() ? `${note.value.trim()}\n${details.join('；')}` : details.join('；');
       updateRoundDialog();
+      uploadTileTrainingSampleIfConsented(faan).catch(() => {});
       document.getElementById('tileAnalyzerModal').close();
       showMessage(`已套用 ${faan}番，你仍然可以手動改。`, '影相計番');
+    }
+
+    async function uploadTileTrainingSampleIfConsented(faan) {
+      const consent = document.getElementById('tileTrainingConsent')?.checked;
+      if (!consent || !tileTrainingImageDataUrl || !tileAnalysis) return;
+      const response = await fetch(tileTrainingEndpoint(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          consent: true,
+          image: tileTrainingImageDataUrl,
+          app: {
+            roomId: room?.id || '',
+            version: appBuildVersion,
+          },
+          context: tileTrainingContext || {},
+          analysis: {
+            ...tileAnalysis,
+            faan,
+          },
+        }),
+      });
+      if (!response.ok) throw new Error('training sample upload failed');
     }
 
     function rejectTileAnalysis() {

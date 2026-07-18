@@ -4,6 +4,7 @@
   "main": "index.ts",
   "dependencies": {
     "@expo/metro-runtime": "~57.0.3",
+    "@vercel/blob": "^2.6.1",
     "expo": "~57.0.4",
     "expo-camera": "~57.0.1",
     "expo-status-bar": "~57.0.0",
