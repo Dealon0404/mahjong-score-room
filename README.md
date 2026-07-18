@@ -99,6 +99,8 @@ cd mahjong-score-room
 
 Production 建議用 Vercel + Upstash Redis：
 
+詳細照做 checklist 見 [PRODUCTION_LIVE_BACKEND_SETUP.md](PRODUCTION_LIVE_BACKEND_SETUP.md)。
+
 1. 將 repo 部署到 Vercel，保留 `api/live-room.js` serverless function。
 2. 建立 Upstash Redis database。
 3. 喺 GitHub repo `Settings` > `Secrets and variables` > `Actions` 加 required secrets：
