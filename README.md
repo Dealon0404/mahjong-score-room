@@ -27,16 +27,19 @@ GitHub Pages 部署已設定好喺 `.github/workflows/pages.yml`。推上 GitHub
 
 ## 影相計番：接真 AI Vision
 
-前端會預設 call 同域 API：`/api/analyze-tiles`。呢個 endpoint 已經加咗喺 `api/analyze-tiles.js`，適合直接部署去 Vercel。
+前端會預設 call Vercel backend：`https://mahjong-score-room.vercel.app/api/analyze-tiles`。呢個 endpoint 已經加咗喺 `api/analyze-tiles.js`，適合直接部署去 Vercel。
 
 Vercel 設定：
 
 1. 將 `mahjong-score-room` 部署到 Vercel。
 2. 喺 Vercel Project Settings > Environment Variables 加：
 	- `OPENAI_API_KEY`
-	- `OPENAI_VISION_MODEL`，可先用 `gpt-4o-mini`
+	- `OPENAI_VISION_MODEL`，建議用 `gpt-4o`；想平啲可以試 `gpt-4o-mini`，但認牌準確度會差啲
 3. Redeploy。
-4. 開 app 入房，記一鋪時按 `影相計番`，影食糊牌相。
+4. 打開 `https://mahjong-score-room.vercel.app/api/analyze-tiles?health=1`，確認 `openaiConfigured: true`。
+5. 開 app 入房，記一鋪時按 `影相計番`，影食糊牌相。
+
+注意：OpenAI Vision 唔係免費服務，會按 API 用量收費；每張相通常係細額成本，但要喺 OpenAI account 有 billing / credits 先會成功。
 
 如果前端同 AI backend 唔同 domain，可以喺 browser console 設定：
 

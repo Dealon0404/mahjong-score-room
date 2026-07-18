@@ -127,6 +127,44 @@ localStorage.setItem('mahjong-live-api-base', 'https://your-vercel-app.vercel.ap
 4. 另一邊應該 1-2 秒內同步。
 5. 關咗房主 browser，再用另一部機 refresh 同一條 invite link；如果 backend 已經 persistent，房間 state 應該仍然喺度。
 
+## 8. Enable Real Tile Recognition
+
+`影相計番` 要真係讀到係咩牌，需要 Vercel backend 有 OpenAI API key。
+
+去 Vercel project：
+
+```text
+Settings > Environment Variables
+```
+
+加入：
+
+```text
+OPENAI_API_KEY=你的 OpenAI API key
+OPENAI_VISION_MODEL=gpt-4o
+```
+
+`gpt-4o` 認牌會比 `gpt-4o-mini` 穩定；如果想慳成本可以之後改用 `gpt-4o-mini` 試。
+
+加完 env vars 後要 Redeploy。完成後打開：
+
+```text
+https://mahjong-score-room.vercel.app/api/analyze-tiles?health=1
+```
+
+成功應該見到：
+
+```json
+{
+  "ok": true,
+  "source": "analyze-tiles",
+  "model": "gpt-4o",
+  "openaiConfigured": true
+}
+```
+
+如果 `openaiConfigured` 係 `false`，影相計番只會跌返 fallback，唔會真認牌。
+
 ## Troubleshooting
 
 ### Workflow says missing secret
