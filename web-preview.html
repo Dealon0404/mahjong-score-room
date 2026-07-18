@@ -1365,6 +1365,7 @@
     const liveClientKey = 'mahjong-live-client-id';
     const defaultLiveApiBase = 'https://mahjong-score-room.vercel.app';
     const livePollMs = 1800;
+    const peerJsUrl = 'https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js';
 
     const seats = ['東', '南', '西', '北'];
     const seatPosition = { 東: 'east', 南: 'south', 西: 'west', 北: 'north' };
@@ -1404,6 +1405,12 @@
     let livePushQueued = false;
     let applyingRemoteState = false;
     let liveSyncStatusText = 'Live sync 準備中';
+    let liveBackendUsable = true;
+    let peerLoader = null;
+    let peer = null;
+    let peerHostId = '';
+    let peerMode = '';
+    let peerConnections = [];
     const liveClientId = getLiveClientId();
     let draft = { winType: '自摸', winnerId: 'player-1', payerId: 'player-2', faan: 3 };
     let selectedTable = {
@@ -1516,7 +1523,10 @@
 
     function saveLocal(options = {}) {
       localStorage.setItem(roomStorageKey, JSON.stringify({ room, rounds }));
-      if (options.sync !== false) scheduleLivePush();
+      if (options.sync !== false) {
+        scheduleLivePush();
+        broadcastPeerState('local-save');
+      }
     }
 
     function getLiveClientId() {
@@ -1571,9 +1581,11 @@
       if (!room?.id) return;
       setActiveLiveApiBase(options.apiBase);
       liveRoomId = room.id;
+      liveBackendUsable = true;
       if (livePollTimer) clearInterval(livePollTimer);
       livePollTimer = setInterval(pollLiveRoom, livePollMs);
       setLiveSyncStatus('Live：連線中...');
+      startPeerHost().catch(() => {});
       if (options.pushNow) {
         pushLiveState(options.reason || 'start').catch(() => {});
       } else {
@@ -1604,7 +1616,7 @@
         liveRoomId = snapshot.roomId || room.id;
         setLiveSyncStatus(snapshot.storage === 'memory-dev' ? 'Live：已同步（dev memory）' : 'Live：已同步');
       } catch (error) {
-        setLiveSyncStatus(`Live：${liveErrorMessage(error)}`);
+        handleLiveBackendError(error);
       } finally {
         livePushInFlight = false;
         if (livePushQueued) {
@@ -1626,7 +1638,7 @@
           applyLiveSnapshot(snapshot);
         }
       } catch (error) {
-        setLiveSyncStatus(`Live：${liveErrorMessage(error)}`);
+        handleLiveBackendError(error);
       }
     }
 
@@ -1668,6 +1680,129 @@
 
     function liveErrorMessage(error) {
       return error?.message || String(error || '連線失敗');
+    }
+
+    function handleLiveBackendError(error) {
+      liveBackendUsable = false;
+      if (livePollTimer) clearInterval(livePollTimer);
+      livePollTimer = null;
+      if (peerHostId || peerMode === 'host') {
+        setLiveSyncStatus(peerConnections.length ? `P2P Live：已連線 ${peerConnections.length} 部裝置` : 'P2P Live：可掃 QR 入房');
+        return;
+      }
+      setLiveSyncStatus(`Live：${liveErrorMessage(error)}`);
+    }
+
+    async function loadPeerLibrary() {
+      if (window.Peer) return;
+      if (peerLoader) return peerLoader;
+      peerLoader = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = peerJsUrl;
+        script.async = true;
+        script.onload = resolve;
+        script.onerror = () => {
+          peerLoader = null;
+          script.remove();
+          reject(new Error('PeerJS 載入失敗'));
+        };
+        document.head.appendChild(script);
+      });
+      return peerLoader;
+    }
+
+    async function startPeerHost() {
+      if (!room?.id || peerMode === 'host') return;
+      await loadPeerLibrary();
+      peerMode = 'host';
+      peer = new Peer();
+      peer.on('open', (id) => {
+        peerHostId = id;
+        setLiveSyncStatus(peerConnections.length ? `P2P Live：已連線 ${peerConnections.length} 部裝置` : 'P2P Live：可掃 QR 入房');
+        if (inviteOpen) renderRoom();
+      });
+      peer.on('connection', (connection) => setupPeerConnection(connection, true));
+      peer.on('error', (error) => {
+        setLiveSyncStatus(`P2P Live：連線失敗 ${error.message || error}`);
+      });
+    }
+
+    async function connectPeerRoom(peerId) {
+      if (!peerId) return false;
+      await loadPeerLibrary();
+      if (!peer || peerMode !== 'guest') {
+        peerMode = 'guest';
+        peer = new Peer();
+      }
+      return new Promise((resolve, reject) => {
+        const connectToHost = () => {
+          const connection = peer.connect(peerId, { reliable: true });
+          setupPeerConnection(connection, false);
+          connection.on('open', () => {
+            setLiveSyncStatus('P2P Live：已連線房主');
+            resolve(true);
+          });
+          connection.on('error', reject);
+        };
+        if (peer.open) {
+          connectToHost();
+        } else {
+          peer.once('open', connectToHost);
+          peer.once('error', reject);
+        }
+      });
+    }
+
+    function setupPeerConnection(connection, isHost) {
+      peerConnections = [...peerConnections.filter((item) => item.open), connection];
+      connection.on('open', () => {
+        if (isHost) sendPeerSnapshot(connection, 'host-open');
+        setLiveSyncStatus(isHost ? `P2P Live：已連線 ${peerConnections.length} 部裝置` : 'P2P Live：已連線房主');
+      });
+      connection.on('data', (message) => handlePeerMessage(message, isHost));
+      connection.on('close', () => {
+        peerConnections = peerConnections.filter((item) => item !== connection && item.open);
+        setLiveSyncStatus(isHost ? (peerConnections.length ? `P2P Live：已連線 ${peerConnections.length} 部裝置` : 'P2P Live：可掃 QR 入房') : 'P2P Live：房主連線已中斷');
+      });
+      connection.on('error', () => {});
+    }
+
+    function peerSnapshot(reason = 'sync') {
+      return {
+        type: 'state',
+        reason,
+        source: liveClientId,
+        roomId: room?.id || '',
+        revision: Date.now(),
+        state: currentLiveState(),
+      };
+    }
+
+    function sendPeerSnapshot(connection, reason = 'sync') {
+      if (!connection?.open || !room) return;
+      connection.send(peerSnapshot(reason));
+    }
+
+    function broadcastPeerState(reason = 'sync') {
+      if (!room || !peerConnections.length || applyingRemoteState) return;
+      const message = peerSnapshot(reason);
+      peerConnections = peerConnections.filter((connection) => connection.open);
+      peerConnections.forEach((connection) => connection.send(message));
+    }
+
+    function handlePeerMessage(message, isHost) {
+      if (!message || message.type !== 'state' || message.source === liveClientId || !message.state?.room) return;
+      applyingRemoteState = true;
+      room = message.state.room;
+      rounds = Array.isArray(message.state.rounds) ? message.state.rounds : [];
+      liveRoomId = room.id;
+      liveRevision = Math.max(liveRevision, Number(message.revision || 0));
+      saveLocal({ sync: false });
+      rememberRoomPlayerAvatars();
+      applyingRemoteState = false;
+      renderActiveScreen();
+      setLiveSyncStatus(isHost ? `P2P Live：已連線 ${peerConnections.length} 部裝置` : 'P2P Live：已同步');
+      if (isHost) broadcastPeerState('host-rebroadcast');
     }
 
     function applyLiveSnapshot(snapshot) {
@@ -1741,11 +1876,32 @@
         applyLiveSnapshot(snapshot);
         inviteOpen = false;
         startLiveSync({ apiBase });
+        if (invite.peerId) connectPeerRoom(invite.peerId).catch(() => {});
         showScreen('room');
         showMessage(`已用 ${source} live 加入「${room.name}」。`, '入房成功');
         return true;
       } catch (error) {
+        if (invite.peerId) return joinPeerRoomFromInvite(invite, source);
         showMessage(`掃到邀請，但入唔到 live 房：${liveErrorMessage(error)}`, '入房失敗');
+        return false;
+      }
+    }
+
+    async function joinPeerRoomFromInvite(invite, source = 'QR Code') {
+      try {
+        const state = stateFromInvite(invite);
+        room = state.room;
+        rounds = state.rounds;
+        liveRoomId = room.id;
+        liveRevision = 0;
+        saveLocal({ sync: false });
+        inviteOpen = false;
+        showScreen('room');
+        await connectPeerRoom(invite.peerId);
+        showMessage(`已用 ${source} P2P live 加入「${room.name}」。房主電腦保持開住就會即時同步。`, '入房成功');
+        return true;
+      } catch (peerError) {
+        showMessage(`掃到邀請，但連唔到房主電腦：${liveErrorMessage(peerError)}`, '入房失敗');
         return false;
       }
     }
@@ -2008,6 +2164,7 @@
         name: room.name,
         setting: room.setting,
         apiBase: activeLiveApiBase(),
+        peerId: peerHostId,
         initialRoundWind: room.initialRoundWind || '東',
         initialDealerSeat: room.initialDealerSeat || '東',
       };
@@ -2340,6 +2497,7 @@
 
     function toggleInvite() {
       inviteOpen = !inviteOpen;
+      if (inviteOpen) startPeerHost().catch(() => {});
       renderRoom();
     }
 

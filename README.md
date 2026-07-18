@@ -90,7 +90,12 @@ cd mahjong-score-room
 
 ## Production Live Room Sync
 
-而家 PWA 已接 `/api/live-room`，掃新版 QR Code 會加入同一個 live room。任何人坐低、離座、調位、記牌、刪紀錄都會同步到同房其他裝置。
+而家 PWA 已接兩種 live room sync：
+
+- P2P Live fallback：毋須 backend，房主電腦保持開住，電話掃 QR 後會用 PeerJS/WebRTC 直接連入同一局。
+- Server Live：部署 `/api/live-room` 後，會用 Vercel + Upstash Redis 做 production persistence。
+
+掃新版 QR Code 會加入同一個 live room。任何人坐低、離座、調位、記牌、刪紀錄都會同步到同房其他裝置。
 
 Production 建議用 Vercel + Upstash Redis：
 
@@ -110,7 +115,7 @@ Production 建議用 Vercel + Upstash Redis：
 localStorage.setItem('mahjong-live-api-base', 'https://your-vercel-app.vercel.app')
 ```
 
-未設定 Upstash 時，API 會用 `memory-dev` fallback，只適合本機/短暫測試，唔係 production 持久同步。
+未設定 Upstash 時，API 會用 `memory-dev` fallback，只適合本機/短暫測試，唔係 production 持久同步。GitHub Pages 仍可用 P2P Live fallback，但房主頁面要保持開住。
 
 ## 下一步要接後端 Auth
 
