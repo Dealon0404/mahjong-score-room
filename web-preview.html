@@ -720,13 +720,6 @@
       font-weight: 950;
     }
 
-    .analysis-reasons {
-      margin: 0;
-      padding-left: 20px;
-      color: var(--ink);
-      line-height: 1.6;
-    }
-
     .analysis-warning {
       padding: 10px 12px;
       border-radius: 12px;
@@ -761,29 +754,6 @@
       color: var(--muted);
       font-size: 14px;
       line-height: 1.5;
-    }
-
-    .tile-chip-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .tile-chip {
-      border-radius: 8px;
-      padding: 6px 8px;
-      background: #fffaf0;
-      border: 1px solid var(--line);
-      color: var(--ink);
-      font-size: 13px;
-      font-weight: 900;
-    }
-
-    .status-strip {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 8px;
     }
 
     .status-pill {
@@ -1227,16 +1197,13 @@
   <dialog id="tileAnalyzerModal">
     <div class="modal-inner">
       <h2>影相計番</h2>
-      <p class="muted" id="tileAnalyzerStatus">影低食糊牌之後，系統會分析番數同原因。</p>
+      <p class="muted" id="tileAnalyzerStatus">影低食糊牌之後，系統會建議番數；唔啱可以直接自己揀。</p>
       <img class="tile-photo-preview" id="tilePhotoPreview" alt="食糊牌相" hidden />
       <div class="analysis-summary" id="tileAnalysisResult"></div>
-      <label><input id="tileTrainingConsent" type="checkbox" /> 匿名提供呢張牌相同分析結果，幫手改善認牌模型。請避免影到人樣或個人資料。</label>
-      <div>
-        <p class="muted">如果相片分析未夠準，可以先補選見到嘅常見牌型，Accept 後仍然可以手動改番數。</p>
-        <div class="chips" id="tilePatternChips"></div>
-      </div>
+      <label>唔用建議？自己揀番數<select id="tileManualFaan"></select></label>
       <div class="btns">
-        <button class="btn secondary" onclick="rejectTileAnalysis()">Reject 唔用</button>
+        <button class="btn secondary" onclick="rejectTileAnalysis()">取消</button>
+        <button class="btn secondary" onclick="applyManualTileFaan()">用我揀嘅番數</button>
         <button class="btn" onclick="acceptTileAnalysis()">Accept 用呢個番數</button>
       </div>
     </div>
@@ -1367,25 +1334,12 @@
     const defaultLiveApiBase = 'https://mahjong-score-room.vercel.app';
     const tileVisionMaxImageSide = 1600;
     const tileVisionJpegQuality = 0.86;
-    const tileTrainingEndpointKey = 'mahjong-tile-training-endpoint';
-    const appBuildVersion = '2026-07-18-training-v1';
     const livePollMs = 1800;
     const peerJsUrl = 'https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js';
 
     const seats = ['東', '南', '西', '北'];
     const seatPosition = { 東: 'east', 南: 'south', 西: 'west', 北: 'north' };
     const windOrder = ['東', '南', '西', '北'];
-    const tilePatternOptions = [
-      { id: 'self-draw', name: '自摸', faan: 1, reason: '自己摸入食糊，按常見屋企玩法加 1番。' },
-      { id: 'menqing', name: '門清', faan: 1, reason: '全程無上、碰、槓，門清加 1番。' },
-      { id: 'pingwu', name: '平糊', faan: 1, reason: '四組順子加一對眼，無刻子。' },
-      { id: 'duiduiwu', name: '對對糊', faan: 3, reason: '全部由刻子或槓組成。' },
-      { id: 'mixed-one-suit', name: '混一色', faan: 3, reason: '一門數牌加字牌。' },
-      { id: 'pure-one-suit', name: '清一色', faan: 7, reason: '全部同一門數牌，無字牌。' },
-      { id: 'small-three-dragons', name: '小三元', faan: 5, reason: '中發白其中兩副刻子，另一隻做眼。' },
-      { id: 'big-three-dragons', name: '大三元', faan: 8, reason: '中發白三副都係刻子或槓。' },
-      { id: 'all-honors', name: '字一色', faan: 10, reason: '全副牌都係風牌或三元牌。' },
-    ];
     let room = null;
     let rounds = [];
     let editingRoundId = null;
@@ -1395,10 +1349,7 @@
     let pendingNoteRoundId = null;
     let pendingConfirmAction = null;
     let tileAnalysis = null;
-    let selectedTilePatternIds = new Set();
     let tilePhotoObjectUrl = '';
-    let tileTrainingImageDataUrl = '';
-    let tileTrainingContext = null;
     let qrScanner = null;
     let qrScannerActive = false;
     let qrScanHandled = false;
@@ -2750,22 +2701,18 @@
       if (!file) return;
       if (tilePhotoObjectUrl) URL.revokeObjectURL(tilePhotoObjectUrl);
       tilePhotoObjectUrl = URL.createObjectURL(file);
-      selectedTilePatternIds = new Set();
       tileAnalysis = null;
-      tileTrainingImageDataUrl = '';
-      tileTrainingContext = null;
 
       const preview = document.getElementById('tilePhotoPreview');
       preview.src = tilePhotoObjectUrl;
       preview.hidden = false;
-      document.getElementById('tileTrainingConsent').checked = false;
       document.getElementById('tileAnalyzerStatus').textContent = '分析緊張相...';
       document.getElementById('tileAnalysisResult').innerHTML = '<p class="muted">正在讀取相片同準備計番。</p>';
-      renderTilePatternChips();
+      renderTileManualFaanOptions(Number(document.getElementById('roundFaan').value || draft.faan || 0));
       document.getElementById('tileAnalyzerModal').showModal();
 
-      tileTrainingImageDataUrl = await prepareTileVisionImage(file);
-      tileAnalysis = await analyzeTilePhoto(file, tileTrainingImageDataUrl);
+      const tileImageDataUrl = await prepareTileVisionImage(file);
+      tileAnalysis = await analyzeTilePhoto(file, tileImageDataUrl);
       renderTileAnalysisResult();
     }
 
@@ -2773,7 +2720,7 @@
       const endpoints = tileVisionEndpoints();
       const windState = currentWindState();
       const winner = room.players.find((player) => player.id === draft.winnerId);
-      tileTrainingContext = {
+      const tileVisionContext = {
         tableSetting: room.setting,
         winType: draft.winType,
         currentFaan: draft.faan,
@@ -2792,7 +2739,7 @@
               image,
               imageName: file.name,
               imageType: file.type,
-              context: tileTrainingContext,
+              context: tileVisionContext,
             }),
           });
           const payload = await response.json().catch(() => ({}));
@@ -2814,11 +2761,6 @@
       if (!location.hostname.endsWith('github.io')) endpoints.push(`${location.origin}/api/analyze-tiles`);
       if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') endpoints.push('http://127.0.0.1:8001/api/analyze-tiles');
       return [...new Set(endpoints)];
-    }
-
-    function tileTrainingEndpoint() {
-      const configured = localStorage.getItem(tileTrainingEndpointKey)?.trim();
-      return configured || `${getLiveApiBase()}/api/training-samples`;
     }
 
     function tileVisionEndpointError(response, payload) {
@@ -2889,7 +2831,7 @@
         reasons: [
           '已收到食糊牌相。',
           '目前 PWA 未連接麻雀牌視覺模型，所以未能可靠由相片直接認出全部牌。',
-          `暫時以表單目前 ${baseline}番 作基準；可補選下方牌型，Accept 後仍然可以手動改。`,
+          `暫時以表單目前 ${baseline}番 作基準；你可以直接揀番數套用。`,
           extraReason,
         ].filter(Boolean),
         patterns: [],
@@ -2900,44 +2842,30 @@
 
     function currentTileAnalysisFaan() {
       const base = tileAnalysis ? tileAnalysis.baseFaan : 0;
-      const extra = Array.from(selectedTilePatternIds).reduce((sum, id) => {
-        const pattern = tilePatternOptions.find((item) => item.id === id);
-        return sum + (pattern ? pattern.faan : 0);
-      }, 0);
-      return Math.max(0, Math.min(13, base + extra));
+      return Math.max(0, Math.min(13, base));
     }
 
-    function renderTilePatternChips() {
-      document.getElementById('tilePatternChips').innerHTML = tilePatternOptions.map((pattern) => `
-        <button class="chip ${selectedTilePatternIds.has(pattern.id) ? 'active' : ''}" onclick="toggleTilePattern('${pattern.id}')">${pattern.name} +${pattern.faan}</button>
-      `).join('');
+    function renderTileManualFaanOptions(value = 0) {
+      const select = document.getElementById('tileManualFaan');
+      if (!select) return;
+      select.innerHTML = Array.from({ length: 14 }, (_, index) => `<option value="${index}">${index}番</option>`).join('');
+      select.value = String(Math.max(0, Math.min(13, Number(value) || 0)));
     }
 
-    function toggleTilePattern(id) {
-      if (selectedTilePatternIds.has(id)) {
-        selectedTilePatternIds.delete(id);
-      } else {
-        selectedTilePatternIds.add(id);
-      }
-      renderTilePatternChips();
-      renderTileAnalysisResult();
+    function selectedTileManualFaan() {
+      return Math.max(0, Math.min(13, Number(document.getElementById('tileManualFaan')?.value || 0)));
     }
 
     function renderTileAnalysisResult() {
       if (!tileAnalysis) return;
-      const selectedPatterns = tilePatternOptions.filter((pattern) => selectedTilePatternIds.has(pattern.id));
-      const patternReasons = selectedPatterns.map((pattern) => `${pattern.name}：${pattern.reason}`);
-      const apiPatterns = (tileAnalysis.patterns || []).map((pattern) => `${pattern.name || '牌型'}：${pattern.reason || `${pattern.faan || 0}番`}`);
-      const reasons = [...tileAnalysis.reasons, ...apiPatterns, ...patternReasons];
       const faan = currentTileAnalysisFaan();
-      const tiles = (tileAnalysis.tiles || []).map((tile) => typeof tile === 'string' ? tile : (tile.label || tile.code || tile.name || '未知'));
       const warnings = tileAnalysis.warnings || [];
-      document.getElementById('tileAnalyzerStatus').textContent = tileAnalysis.source === 'local-fallback' ? '相片已加入，等你確認番數。' : 'AI 分析完成，請確認結果。';
+      renderTileManualFaanOptions(faan);
+      document.getElementById('tileAnalyzerStatus').textContent = tileAnalysis.source === 'local-fallback' ? '相片已加入，可以直接揀番數。' : '分析完成，可以接受建議或自己揀番數。';
       document.getElementById('tileAnalysisResult').innerHTML = `
         <div class="analysis-warning">${tileAnalysis.source === 'local-fallback' ? '提示：而家係本機 fallback flow，真正自動認牌需要接駁 vision API。' : `信心：${escapeHtml(tileAnalysis.confidence)}`}</div>
+        <p class="muted">系統建議</p>
         <div class="analysis-total">${faan}番</div>
-        ${tiles.length ? `<div><strong>AI 認到嘅牌</strong><div class="tile-chip-list">${tiles.map((tile) => `<span class="tile-chip">${escapeHtml(tile)}</span>`).join('')}</div></div>` : ''}
-        <ul class="analysis-reasons">${reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join('')}</ul>
         ${warnings.length ? `<div class="analysis-warning">${warnings.map((warning) => escapeHtml(warning)).join('<br>')}</div>` : ''}
       `;
     }
@@ -2945,43 +2873,21 @@
     function acceptTileAnalysis() {
       if (!tileAnalysis) return;
       const faan = currentTileAnalysisFaan();
-      document.getElementById('roundFaan').value = String(faan);
-      const selectedPatterns = tilePatternOptions.filter((pattern) => selectedTilePatternIds.has(pattern.id));
-      const details = [
-        `影相計番建議：${faan}番`,
-        ...tileAnalysis.reasons,
-        ...(tileAnalysis.tiles || []).length ? [`AI 認到：${(tileAnalysis.tiles || []).map((tile) => typeof tile === 'string' ? tile : (tile.label || tile.code || tile.name || '未知')).join('、')}`] : [],
-        ...selectedPatterns.map((pattern) => `${pattern.name}+${pattern.faan}`),
-      ];
-      const note = document.getElementById('roundNote');
-      note.value = note.value.trim() ? `${note.value.trim()}\n${details.join('；')}` : details.join('；');
-      updateRoundDialog();
-      uploadTileTrainingSampleIfConsented(faan).catch(() => {});
-      document.getElementById('tileAnalyzerModal').close();
-      showMessage(`已套用 ${faan}番，你仍然可以手動改。`, '影相計番');
+      applyTileFaan(faan, '影相計番建議');
     }
 
-    async function uploadTileTrainingSampleIfConsented(faan) {
-      const consent = document.getElementById('tileTrainingConsent')?.checked;
-      if (!consent || !tileTrainingImageDataUrl || !tileAnalysis) return;
-      const response = await fetch(tileTrainingEndpoint(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          consent: true,
-          image: tileTrainingImageDataUrl,
-          app: {
-            roomId: room?.id || '',
-            version: appBuildVersion,
-          },
-          context: tileTrainingContext || {},
-          analysis: {
-            ...tileAnalysis,
-            faan,
-          },
-        }),
-      });
-      if (!response.ok) throw new Error('training sample upload failed');
+    function applyManualTileFaan() {
+      applyTileFaan(selectedTileManualFaan(), '影相計番手動確認');
+    }
+
+    function applyTileFaan(faan, sourceLabel) {
+      document.getElementById('roundFaan').value = String(faan);
+      const note = document.getElementById('roundNote');
+      const detail = `${sourceLabel}：${faan}番`;
+      note.value = note.value.trim() ? `${note.value.trim()}\n${detail}` : detail;
+      updateRoundDialog();
+      document.getElementById('tileAnalyzerModal').close();
+      showMessage(`已套用 ${faan}番，你仍然可以手動改。`, '影相計番');
     }
 
     function rejectTileAnalysis() {

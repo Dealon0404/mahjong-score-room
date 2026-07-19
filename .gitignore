@@ -8,6 +8,7 @@ vision-service/models/
 vision-service/datasets/
 vision-service/downloads/
 vision-service/runs/
+vision-service/*.pt
 __pycache__/
 *.py[cod]
 
