@@ -680,6 +680,19 @@
       gap: 12px;
     }
 
+    .field-group {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .field-group input {
+      width: auto;
+      margin-right: 6px;
+    }
+
     .round-preview {
       display: grid;
       gap: 8px;
@@ -1175,6 +1188,10 @@
       <div class="round-form">
         <label>食糊方式<select id="roundWinType" onchange="updateRoundDialog()"></select></label>
         <label id="roundPayerField">邊個出銃？<select id="roundPayer" onchange="updateRoundDialog()"></select></label>
+        <div id="roundMultiWinnerField" class="field-group" hidden>
+          <span>一炮多響</span>
+          <div class="chips" id="roundMultiWinnerOptions"></div>
+        </div>
         <label>幾多番？<select id="roundFaan" onchange="updateRoundDialog()"></select></label>
       </div>
       <label>備註<textarea id="roundNote" placeholder="例如 十三么、包自摸、大三元" oninput="updateRoundDialog()"></textarea></label>
@@ -1370,7 +1387,7 @@
     let peerMode = '';
     let peerConnections = [];
     const liveClientId = getLiveClientId();
-    let draft = { winType: '自摸', winnerId: 'player-1', payerId: 'player-2', faan: 3 };
+    let draft = { winType: '自摸', winnerId: 'player-1', winnerIds: ['player-1'], payerId: 'player-2', faan: 3 };
     let selectedTable = {
       id: 'selected-table',
       group: '自選',
@@ -1442,9 +1459,8 @@
       let state = { roundWind: room?.initialRoundWind || '東', dealerSeat: room?.initialDealerSeat || '東' };
       rounds.slice().sort((a, b) => a.roundNo - b.roundNo).forEach((round) => {
         states[round.id] = { ...state };
-        const winner = room && room.players.find((player) => player.id === round.winnerId);
-        const winnerSeat = round.winnerSeat || (winner && winner.seat);
-        if (round.winType !== '流局' && winnerSeat !== state.dealerSeat) {
+        const winnerSeats = roundWinnerSeats(round);
+        if (round.winType !== '流局' && !winnerSeats.includes(state.dealerSeat)) {
           state = advanceWindState(state);
         }
       });
@@ -2397,27 +2413,52 @@
     function calc(d) {
       const amountEach = amountForFaan(room.setting, d.faan);
       const payments = Object.fromEntries(room.players.map((player) => [player.id, 0]));
-      const losers = room.players.filter((player) => player.id !== d.winnerId).map((player) => player.id);
+      const winnerIds = roundWinnerIds(d);
+      const primaryWinnerId = winnerIds[0] || d.winnerId;
+      const losers = room.players.filter((player) => !winnerIds.includes(player.id)).map((player) => player.id);
       if (d.winType === '自摸') {
-        losers.forEach((id) => { payments[id] -= amountEach; payments[d.winnerId] += amountEach; });
+        losers.forEach((id) => { payments[id] -= amountEach; payments[primaryWinnerId] += amountEach; });
       }
       if (d.winType === '食糊') {
         if (room.setting.discardMode === '全銃') {
-          payments[d.payerId] -= amountEach * 3;
-          payments[d.winnerId] += amountEach * 3;
+          winnerIds.forEach((winnerId) => {
+            payments[d.payerId] -= amountEach * 3;
+            payments[winnerId] += amountEach * 3;
+          });
         } else {
-          losers.forEach((id) => {
-            const pay = id === d.payerId ? amountEach * 2 : amountEach;
-            payments[id] -= pay;
-            payments[d.winnerId] += pay;
+          winnerIds.forEach((winnerId) => {
+            losers.forEach((id) => {
+              const pay = id === d.payerId ? amountEach * 2 : amountEach;
+              payments[id] -= pay;
+              payments[winnerId] += pay;
+            });
           });
         }
       }
       if (d.winType === '包自摸') {
         payments[d.payerId] -= amountEach * 3;
-        payments[d.winnerId] += amountEach * 3;
+        payments[primaryWinnerId] += amountEach * 3;
       }
       return { amountEach, payments };
+    }
+
+    function roundWinnerIds(round = draft) {
+      const fallback = round.winnerId ? [round.winnerId] : [];
+      const ids = Array.isArray(round.winnerIds) && round.winnerIds.length ? round.winnerIds : fallback;
+      const validIds = room ? room.players.map((player) => player.id) : [];
+      return [...new Set(ids)].filter((id) => validIds.includes(id));
+    }
+
+    function roundWinnerSeats(round = draft) {
+      if (Array.isArray(round.winnerSeats) && round.winnerSeats.length) return round.winnerSeats;
+      return roundWinnerIds(round).map((id) => room?.players.find((player) => player.id === id)?.seat).filter(Boolean);
+    }
+
+    function roundWinnerNames(round = draft) {
+      return roundWinnerIds(round).map((id) => {
+        const player = room.players.find((item) => item.id === id);
+        return player ? displayPlayerName(player) : '';
+      }).filter(Boolean).join('、');
     }
 
     function totals() {
@@ -2493,7 +2534,7 @@
         return;
       }
       editingRoundId = null;
-      draft = { winType: '自摸', winnerId, payerId: room.players.find((player) => player.id !== winnerId).id, faan: 3 };
+      draft = { winType: '自摸', winnerId, winnerIds: [winnerId], payerId: room.players.find((player) => player.id !== winnerId).id, faan: 3 };
       openRoundDialog(winnerId);
     }
 
@@ -2521,10 +2562,9 @@
 
     function openSitDialog(id, isEdit = false) {
       const player = room.players.find((item) => item.id === id);
-      const defaultName = room.ownerName || '我';
       pendingSeatId = id;
       document.getElementById('sitSeatTitle').textContent = isEdit ? `改${player.seat}位名` : `${player.seat}位坐低`;
-      document.getElementById('sitName').value = isEdit ? player.name : defaultName;
+      document.getElementById('sitName').value = isEdit ? player.name : '';
       document.getElementById('sitActionButton').textContent = isEdit ? '改名' : '坐低';
       document.getElementById('sitModal').showModal();
     }
@@ -2599,7 +2639,7 @@
         return;
       }
       editingRoundId = null;
-      draft = { winType: '自摸', winnerId: room.players[0].id, payerId: room.players[1].id, faan: 3 };
+      draft = { winType: '自摸', winnerId: room.players[0].id, winnerIds: [room.players[0].id], payerId: room.players[1].id, faan: 3 };
       showScreen('record');
     }
 
@@ -2645,6 +2685,8 @@
 
     function openRoundDialog(winnerId) {
       draft.winnerId = winnerId;
+      draft.winnerIds = roundWinnerIds({ ...draft, winnerIds: draft.winnerIds || [winnerId], winnerId });
+      if (!draft.winnerIds.includes(winnerId)) draft.winnerIds.unshift(winnerId);
       if (!draft.payerId || draft.payerId === winnerId) {
         draft.payerId = room.players.find((player) => player.id !== winnerId).id;
       }
@@ -2667,20 +2709,53 @@
       draft.winType = winType;
       draft.faan = faan;
       draft.note = document.getElementById('roundNote').value.trim();
+      if (winType !== '食糊') {
+        draft.winnerIds = [draft.winnerId];
+      } else {
+        draft.winnerIds = roundWinnerIds({ ...draft, winnerIds: draft.winnerIds || [draft.winnerId] });
+        if (!draft.winnerIds.includes(draft.winnerId)) draft.winnerIds.unshift(draft.winnerId);
+      }
 
       const payerField = document.getElementById('roundPayerField');
       const payerSelect = document.getElementById('roundPayer');
       const selectedPayerId = payerSelect.value || draft.payerId;
-      const payerOptions = room.players.filter((player) => player.id !== draft.winnerId);
+      const payerOptions = room.players.filter((player) => !draft.winnerIds.includes(player.id));
       payerField.style.display = winType === '自摸' ? 'none' : 'grid';
       payerField.firstChild.textContent = winType === '包自摸' ? '邊個包自摸？' : '邊個出銃？';
       payerSelect.innerHTML = payerOptions.map((player) => `<option value="${player.id}">${player.seat} ${escapeHtml(displayPlayerName(player))}</option>`).join('');
-      draft.payerId = payerOptions.some((player) => player.id === selectedPayerId) ? selectedPayerId : payerOptions[0].id;
+      draft.payerId = payerOptions.some((player) => player.id === selectedPayerId) ? selectedPayerId : payerOptions[0]?.id;
       payerSelect.value = draft.payerId;
+      renderRoundMultiWinnerOptions();
 
       const winner = room.players.find((player) => player.id === draft.winnerId);
-      document.getElementById('roundModalTitle').textContent = `${winner.seat} ${displayPlayerName(winner)} Win`;
+      const titleNames = draft.winType === '食糊' && draft.winnerIds.length > 1 ? roundWinnerNames(draft) : displayPlayerName(winner);
+      document.getElementById('roundModalTitle').textContent = `${winner.seat} ${titleNames} Win`;
       renderRoundPreview();
+    }
+
+    function renderRoundMultiWinnerOptions() {
+      const field = document.getElementById('roundMultiWinnerField');
+      const target = document.getElementById('roundMultiWinnerOptions');
+      const isDiscardWin = draft.winType === '食糊';
+      field.hidden = !isDiscardWin;
+      if (!isDiscardWin) {
+        target.innerHTML = '';
+        return;
+      }
+      target.innerHTML = room.players
+        .filter((player) => player.id !== draft.winnerId && player.id !== draft.payerId)
+        .map((player) => `
+          <label class="chip ${draft.winnerIds.includes(player.id) ? 'active' : ''}">
+            <input type="checkbox" ${draft.winnerIds.includes(player.id) ? 'checked' : ''} onchange="toggleRoundWinner('${player.id}', this.checked)" /> ${player.seat} ${escapeHtml(displayPlayerName(player))}
+          </label>
+        `).join('');
+    }
+
+    function toggleRoundWinner(id, checked) {
+      const ids = roundWinnerIds(draft);
+      draft.winnerIds = checked ? [...new Set([...ids, id])] : ids.filter((winnerId) => winnerId !== id);
+      if (!draft.winnerIds.includes(draft.winnerId)) draft.winnerIds.unshift(draft.winnerId);
+      updateRoundDialog();
     }
 
     function renderRoundPreview() {
@@ -2757,7 +2832,9 @@
       const configured = localStorage.getItem('mahjong-tile-vision-endpoint')?.trim();
       const endpoints = [];
       if (configured) endpoints.push(configured);
+      endpoints.push(`${getLiveApiBase()}/api/analyze-tiles-yolo`);
       endpoints.push(`${getLiveApiBase()}/api/analyze-tiles`);
+      if (!location.hostname.endsWith('github.io')) endpoints.push(`${location.origin}/api/analyze-tiles-yolo`);
       if (!location.hostname.endsWith('github.io')) endpoints.push(`${location.origin}/api/analyze-tiles`);
       if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') endpoints.push('http://127.0.0.1:8001/api/analyze-tiles');
       return [...new Set(endpoints)];
@@ -2773,7 +2850,7 @@
       if (!file.type.startsWith('image/')) return dataUrl;
       const image = await loadImageElement(dataUrl);
       const longestSide = Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height);
-      if (!longestSide || (longestSide <= tileVisionMaxImageSide && dataUrl.length < 7 * 1024 * 1024)) return dataUrl;
+      if (!longestSide) return dataUrl;
       const scale = Math.min(1, tileVisionMaxImageSide / longestSide);
       const width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
       const height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
@@ -2825,18 +2902,18 @@
       const baseline = Math.max(0, Math.min(13, Number(document.getElementById('roundFaan').value || draft.faan || 0)));
       return {
         source: 'local-fallback',
-        confidence: '待接 AI',
+        confidence: '待確認',
         faan: baseline,
         baseFaan: baseline,
         reasons: [
           '已收到食糊牌相。',
-          '目前 PWA 未連接麻雀牌視覺模型，所以未能可靠由相片直接認出全部牌。',
+          '自動認牌暫時未能完成，所以未能可靠由相片直接認出全部牌。',
           `暫時以表單目前 ${baseline}番 作基準；你可以直接揀番數套用。`,
           extraReason,
         ].filter(Boolean),
         patterns: [],
         tiles: [],
-        warnings: ['未接駁 Vision API，暫時未能由相片認出牌面。'],
+        warnings: ['自動認牌暫時失敗，請用手動番數確認。'],
       };
     }
 
@@ -2863,7 +2940,7 @@
       renderTileManualFaanOptions(faan);
       document.getElementById('tileAnalyzerStatus').textContent = tileAnalysis.source === 'local-fallback' ? '相片已加入，可以直接揀番數。' : '分析完成，可以接受建議或自己揀番數。';
       document.getElementById('tileAnalysisResult').innerHTML = `
-        <div class="analysis-warning">${tileAnalysis.source === 'local-fallback' ? '提示：而家係本機 fallback flow，真正自動認牌需要接駁 vision API。' : `信心：${escapeHtml(tileAnalysis.confidence)}`}</div>
+        <div class="analysis-warning">${tileAnalysis.source === 'local-fallback' ? '提示：自動認牌暫時失敗，請直接揀番數。' : `信心：${escapeHtml(tileAnalysis.confidence)}`}</div>
         <p class="muted">系統建議</p>
         <div class="analysis-total">${faan}番</div>
         ${warnings.length ? `<div class="analysis-warning">${warnings.map((warning) => escapeHtml(warning)).join('<br>')}</div>` : ''}
@@ -2873,26 +2950,21 @@
     function acceptTileAnalysis() {
       if (!tileAnalysis) return;
       const faan = currentTileAnalysisFaan();
-      applyTileFaan(faan, '影相計番建議');
+      applyTileFaan(faan);
     }
 
     function applyManualTileFaan() {
-      applyTileFaan(selectedTileManualFaan(), '影相計番手動確認');
+      applyTileFaan(selectedTileManualFaan());
     }
 
-    function applyTileFaan(faan, sourceLabel) {
+    function applyTileFaan(faan) {
       document.getElementById('roundFaan').value = String(faan);
-      const note = document.getElementById('roundNote');
-      const detail = `${sourceLabel}：${faan}番`;
-      note.value = note.value.trim() ? `${note.value.trim()}\n${detail}` : detail;
       updateRoundDialog();
       document.getElementById('tileAnalyzerModal').close();
-      showMessage(`已套用 ${faan}番，你仍然可以手動改。`, '影相計番');
     }
 
     function rejectTileAnalysis() {
       document.getElementById('tileAnalyzerModal').close();
-      showMessage('已保留原本手動番數。', '影相計番');
     }
 
     function saveRoundFromDialog() {
@@ -2915,17 +2987,19 @@
     }
 
     function saveRound() {
-      if ((draft.winType === '食糊' || draft.winType === '包自摸') && draft.payerId === draft.winnerId) {
+      const winnerIds = roundWinnerIds(draft);
+      if ((draft.winType === '食糊' || draft.winType === '包自摸') && winnerIds.includes(draft.payerId)) {
         showMessage('出銃者或包自摸者唔可以同贏家一樣。');
         return;
       }
-      const result = calc(draft);
+      const roundDraft = { ...draft, winnerId: winnerIds[0], winnerIds };
+      const result = calc(roundDraft);
       const windState = currentWindState();
-      const winner = room.players.find((player) => player.id === draft.winnerId);
+      const winnerSeats = roundWinnerSeats(roundDraft);
       if (editingRoundId) {
-        rounds = rounds.map((round) => round.id === editingRoundId ? { ...round, ...draft, ...result, winnerSeat: winner.seat, updatedAt: new Date().toLocaleString('zh-HK') } : round);
+        rounds = rounds.map((round) => round.id === editingRoundId ? { ...round, ...roundDraft, ...result, winnerSeat: winnerSeats[0], winnerSeats, updatedAt: new Date().toLocaleString('zh-HK') } : round);
       } else {
-        rounds.unshift({ id: makeId('round'), roundNo: nextRoundNo(), ...draft, ...result, winnerSeat: winner.seat, dealerSeat: windState.dealerSeat, roundWind: windState.roundWind, updatedAt: new Date().toLocaleString('zh-HK') });
+        rounds.unshift({ id: makeId('round'), roundNo: nextRoundNo(), ...roundDraft, ...result, winnerSeat: winnerSeats[0], winnerSeats, dealerSeat: windState.dealerSeat, roundWind: windState.roundWind, updatedAt: new Date().toLocaleString('zh-HK') });
       }
       saveLocal();
       const roundModal = document.getElementById('roundModal');
@@ -2951,10 +3025,12 @@
             <div class="btns"><button class="btn secondary" onclick="openNoteDialog('${round.id}')">修改備註</button><button class="btn danger" onclick="deleteRound('${round.id}')">刪除流局</button></div>
           </div>`;
         }
-        const winner = room.players.find((player) => player.id === round.winnerId);
+        const winnerIds = roundWinnerIds(round);
+        const winnerNames = roundWinnerNames(round);
         const payer = room.players.find((player) => player.id === round.payerId);
+        const winTypeLabel = round.winType === '食糊' && winnerIds.length > 1 ? '一炮多響' : round.winType;
         return `<div class="history-card">
-          <h3>第 ${round.roundNo} 鋪：${displayPlayerName(winner)} ${round.winType} ${round.faan}番</h3>
+          <h3>第 ${round.roundNo} 鋪：${escapeHtml(winnerNames)} ${winTypeLabel} ${round.faan}番</h3>
           <p class="muted">${windState.roundWind}圈・${windState.dealerSeat}局 · ${payer && round.winType !== '自摸' ? (round.winType === '食糊' ? '出銃：' : '包自摸：') + displayPlayerName(payer) + ' · ' : ''}最後修改：${round.updatedAt}</p>
           ${round.note ? `<p>${escapeHtml(round.note)}</p>` : ''}
           <div class="pills">${room.players.map((player) => `<span class="pill ${round.payments[player.id] >= 0 ? 'pos' : 'neg'}">${displayPlayerName(player)} ${money(round.payments[player.id])}</span>`).join('')}</div>
@@ -2966,7 +3042,8 @@
     function editRound(id) {
       const round = rounds.find((item) => item.id === id);
       editingRoundId = id;
-      draft = { winType: round.winType, winnerId: round.winnerId, payerId: round.payerId || room.players.find((player) => player.id !== round.winnerId).id, faan: round.faan, note: round.note || '', dealerSeat: round.dealerSeat, roundWind: round.roundWind };
+      const winnerIds = roundWinnerIds(round);
+      draft = { winType: round.winType, winnerId: winnerIds[0] || round.winnerId, winnerIds, payerId: round.payerId || room.players.find((player) => !winnerIds.includes(player.id)).id, faan: round.faan, note: round.note || '', dealerSeat: round.dealerSeat, roundWind: round.roundWind };
       showScreen('record');
       openRoundDialog(draft.winnerId);
     }
